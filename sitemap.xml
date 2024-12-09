@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/Freeradius/freeradius-tunnel-anonymous/</loc>
+    
+    <lastmod>2024-11-03</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/Fortinet/fortinet-fg-tip-radius-invalid-secret/</loc>
+    
+    <lastmod>2024-10-04</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/Freeradius/freeradius-tips-cve-2024-3596-blastradius/</loc>
+    
+    <lastmod>2024-10-03</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/Freeradius/freeradius-eduroam-compliance-intro/</loc>
+    
+    <lastmod>2024-10-02</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/Freeradius/freeradius-roaming-intro/</loc>
+    
+    <lastmod>2024-10-01</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/Fortinet/fortinet-fg-automation-collect-malicious-ip-with-github/</loc>
+    
+    <lastmod>2023-12-03</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/Fortinet/fortinet-fg-feed-rbl-iplist-protect-itself/</loc>
+    
+    <lastmod>2023-11-25</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/Fortinet/fortinet-tips-fg-automation-webhook-error-github/</loc>
+    
+    <lastmod>2023-11-23</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/Fortinet/fortinet-fg-apple-macos-5g-channel-list/</loc>
+    
+    <lastmod>2023-01-02</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/ALE/ale-cybersecurity-access-guardian-overview/</loc>
+    
+    <lastmod>2021-05-21</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/ALE/ale-cybersecurity-dhcp-snooping/</loc>
+    
+    <lastmod>2021-05-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/ALE/ale-cybersecurity-port-isolation/</loc>
+    
+    <lastmod>2021-05-14</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/ALE/ale-cybersecurity-anti-arp-spoofing/</loc>
+    
+    <lastmod>2021-05-13</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/ALE/ale-vc-basic-config/</loc>
+    
+    <lastmod>2021-04-30</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/ALE/ale-vc-overview/</loc>
+    
+    <lastmod>2021-04-24</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/Cisco/firepower-tips-vi-not-found/</loc>
+    
+    <lastmod>2021-03-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/Freeradius/freeradius-tips-multiple-ldap-server/</loc>
+    
+    <lastmod>2021-02-12</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/Freeradius/freeradius-tips-ldap-search-timeout/</loc>
+    
+    <lastmod>2021-02-09</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/Freeradius/freeradius-integrate-ldap-pap/</loc>
+    
+    <lastmod>2021-02-07</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/ElasticStack/ingest-management-part2/</loc>
+    
+    <lastmod>2020-10-07</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/Fortinet/fortinet-fg-sdwan-select-on-link-quality/</loc>
+    
+    <lastmod>2020-10-05</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/ElasticStack/ingest-management/</loc>
+    
+    <lastmod>2020-10-01</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/Nutanix/live-clone-vmdisk/</loc>
+    
+    <lastmod>2020-09-15</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/markdown-blog/</loc>
+    
+    <lastmod>2020-09-13</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/categories/index.html</loc>
+    
+    <lastmod>2020-09-13</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/tags/index.html</loc>
+    
+    <lastmod>2020-09-13</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/Zabbix/zbx-template-ale-omniswitch-r8/</loc>
+    
+    <lastmod>2019-09-12</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/ALE/ale-network-automation-for-virtualization/</loc>
+    
+    <lastmod>2019-08-27</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/Zimbra/zimbra-tips-gal-resources-not-found/</loc>
+    
+    <lastmod>2015-02-27</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/Zimbra/zimbra-integrate-external-authenticate/</loc>
+    
+    <lastmod>2015-02-25</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/Freeradius/freeradius-integrate-gmail-pop3s/</loc>
+    
+    <lastmod>2015-02-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/Fortinet/fortinet-fg-script-backup-config/</loc>
+    
+    <lastmod>2015-02-13</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/ALE/ale-script-backup-config/</loc>
+    
+    <lastmod>2015-02-13</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/Fortinet/fortinet-fg-script-rblip/</loc>
+    
+    <lastmod>2015-02-13</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://blog.samhost.idv.tw/Freeradius/freeradius-integrate-active-directory/</loc>
+    
+    <lastmod>2015-02-13</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+
+  <url>
+    <loc>https://blog.samhost.idv.tw/</loc>
+    <lastmod>2024-12-09</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  
+
+  
+</urlset>
