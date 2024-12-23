@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /upload/
+Disallow: /images/
+Allow:
+Sitemap: https://blog.samhost.idv.tw/sitemap.xml
