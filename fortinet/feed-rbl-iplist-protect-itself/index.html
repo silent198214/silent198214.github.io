@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="po7J7mJmPnFy18jHjTQq1NrsexKsVfZYl0zy84hP08s">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha256-5eIC48iZUHmSlSUz9XtjRyK2mzQkHScZY1WdMaoz74E=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.31/fancybox/fancybox.css" integrity="sha256-gkQVf8UKZgQ0HyuxL/VnacadJ+D2Kox2TCEBuNQg5+w=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"silent198214.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.21.1","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":false,"copycode":{"enable":true,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":false,"lazyload":true,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":false,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜尋...","empty":"我們無法找到任何有關 ${query} 的搜索結果","hits_time":"找到 ${hits} 個搜索結果（用時 ${time} 毫秒）","hits":"找到 ${hits} 個搜索結果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="網路攻擊一直都是網管及資安人員關心的議題，但攻擊行為模式層出不窮，很難一次到位(也幾乎不太可能)，而 IP 防護是基本也是至少能做到的事情。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="FortiGate protect self service via External Connectors">
+<meta property="og:url" content="https://silent198214.github.io/fortinet/feed-rbl-iplist-protect-itself/">
+<meta property="og:site_name" content="山姆的 IT 日常">
+<meta property="og:description" content="網路攻擊一直都是網管及資安人員關心的議題，但攻擊行為模式層出不窮，很難一次到位(也幾乎不太可能)，而 IP 防護是基本也是至少能做到的事情。">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://silent198214.github.io/images/fortigate-sysadmin.png">
+<meta property="og:image" content="https://silent198214.github.io/images/fortigate-local-in-policy-1.png">
+<meta property="og:image" content="https://silent198214.github.io/images/fortigate-local-in-policy-2.png">
+<meta property="og:image" content="https://silent198214.github.io/images/fortigate-sslvpn-settings.png">
+<meta property="article:published_time" content="2023-11-25T01:25:00.000Z">
+<meta property="article:modified_time" content="2023-11-25T01:25:00.000Z">
+<meta property="article:author" content="Sam Chen">
+<meta property="article:tag" content="CyberSecurity">
+<meta property="article:tag" content="FortiGate">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://silent198214.github.io/images/fortigate-sysadmin.png">
+
+
+<link rel="canonical" href="https://silent198214.github.io/fortinet/feed-rbl-iplist-protect-itself/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-TW","comments":true,"permalink":"https://silent198214.github.io/fortinet/feed-rbl-iplist-protect-itself/","path":"fortinet/feed-rbl-iplist-protect-itself/","title":"FortiGate protect self service via External Connectors"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>FortiGate protect self service via External Connectors | 山姆的 IT 日常</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-8K41M2BW4P"></script>
+  <script class="next-config" data-name="google_analytics" type="application/json">{"tracking_id":"G-8K41M2BW4P","only_pageview":false,"measure_protocol_api_secret":null}</script>
+  <script src="/js/third-party/analytics/google-analytics.js"></script>
+
+
+
+  <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{&quot;token&quot;: &quot;376b1ae59fa7423797c15d59469ee4e4&quot;}'></script>
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切換導航欄" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">山姆的 IT 日常</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">Networking / Devops</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜尋" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首頁</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>標籤</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分類</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>歸檔</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目錄
+        </li>
+        <li class="sidebar-nav-overview">
+          本站概要
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Management-Protect"><span class="nav-number">1.</span> <span class="nav-text">Management Protect</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SSL-VPN-Protect"><span class="nav-number">2.</span> <span class="nav-text">SSL VPN Protect</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Sam Chen"
+      src="https://github.com/silent198214.png">
+  <p class="site-author-name" itemprop="name">Sam Chen</p>
+  <div class="site-description" itemprop="description">努力的走在 IT 這條漫長的道路上</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">35</span>
+          <span class="site-state-item-name">文章</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分類</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">標籤</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL3NpbGVudDE5ODIxNA==" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;silent198214"><i class="fab fa-github fa-lg fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cubGlua2VkaW4uY29tL2luL3NhbTE5ODIv" title="Linkedin → https:&#x2F;&#x2F;www.linkedin.com&#x2F;in&#x2F;sam1982&#x2F;"><i class="fab fa-linkedin-in fa-fw"></i>Linkedin</span>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-TW">
+    <link itemprop="mainEntityOfPage" href="https://silent198214.github.io/fortinet/feed-rbl-iplist-protect-itself/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://github.com/silent198214.png">
+      <meta itemprop="name" content="Sam Chen">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="山姆的 IT 日常">
+      <meta itemprop="description" content="努力的走在 IT 這條漫長的道路上">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="FortiGate protect self service via External Connectors | 山姆的 IT 日常">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          FortiGate protect self service via External Connectors
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">發表於</span>
+
+      <time title="創建時間：2023-11-25 09:25:00" itemprop="dateCreated datePublished" datetime="2023-11-25T09:25:00+08:00">2023-11-25</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分類於</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/fortinet/" itemprop="url" rel="index"><span itemprop="name">fortinet</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>網路攻擊一直都是網管及資安人員關心的議題，但攻擊行為模式層出不窮，很難一次到位(也幾乎不太可能)，而 IP 防護是基本也是至少能做到的事情。</p>
+<span id="more"></span>
+<p>許多資安設備針對 IP 黑名單都有提供自家自動更新的功能，有些更會提供使用者設定自己搜集好的黑名單列表，定時更新。</p>
+<p>FortiGate 在 6.0 版加入了 <code>Security Fabric</code> 架構，提供了 <code>Threat Feeds</code> 的功能，不過當時這個功能僅限在 <code>Security Profile</code> 裡面使用 (WebFilter)，直到 6.4 才真正可以運用在 <code>Firewall Policy</code>。</p>
+<p>不過許多攻擊目標會鎖定 FortiGate 本身所提供的服務，例如 Management、SSL VPN …</p>
+<h2 id="Management-Protect">Management Protect</h2>
+<p>針對 Management 防護比較好的做法是在<code>所有</code>的 Administrator Users 裡面指定 <code>Trusted Host</code></p>
+<p><img data-src="/images/fortigate-sysadmin.png" alt="System Administrator"></p>
+<p>如果沒有辦法針對<code>所有</code>的 Administrator Users 設定 <code>Trusted Host</code>，則需要設定 <code>Local-in-policy</code></p>
+<div class="note info"><p><strong>Local-in-policy</strong> 只能在透過 <code>CLI</code> 設定，GUI 只能看到簡易的資訊，而 policy 預設的 action 是 <code>Deny</code></p>
+</div>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">config firewall local-in-policy</span><br><span class="line">    edit 1</span><br><span class="line">        set intf &quot;wan1&quot;</span><br><span class="line">        set srcaddr &quot;Block IPs&quot;</span><br><span class="line">        set dstaddr &quot;all&quot;</span><br><span class="line">        set service &quot;ALL&quot;</span><br><span class="line">        set schedule &quot;always&quot;</span><br><span class="line">    next</span><br><span class="line">end</span><br></pre></td></tr></table></figure>
+<p>依據官方論壇的 <span class="exturl" data-url="aHR0cHM6Ly9jb21tdW5pdHkuZm9ydGluZXQuY29tL3Q1L0ZvcnRpR2F0ZS9UZWNobmljYWwtVGlwLVVzZS1uYnNwLWFuLW5ic3AtZXh0ZXJuYWwtY29ubmVjdG9yLUlQLUFkZHJlc3MvdGEtcC8yNDYyNzk=">FortiGate Tech Tips<i class="fa fa-external-link-alt"></i></span> 指示 FortiGate <code>7.2.4</code> 以上的版本，local-in-policy 已經可以設定 <code>Threat Feeds</code></p>
+<p>我自己使用 <code>7.2.6</code> 的確可以正常使用</p>
+<p><img data-src="/images/fortigate-local-in-policy-1.png" alt="Local in policy 1"></p>
+<p><img data-src="/images/fortigate-local-in-policy-2.png" alt="Local in policy 2"></p>
+<h2 id="SSL-VPN-Protect">SSL VPN Protect</h2>
+<p>在我測試的時候發現 <code>Local-in-policy</code> 是沒有辦法保護 <code>SSL VPN</code> service</p>
+<p>需要到 <code>SSL-VPN Settings</code> 設定 <code>Restrict Access</code>，它可以選擇<code>允許所有IP</code>或是<code>限制特定IP</code>，也可以反向設定<code>拒絕特定IP</code></p>
+<p>FortiGate 7.2 也發現可以在 <code>Hosts</code> 中設定 <code>Threat Feeds</code></p>
+<p><img data-src="/images/fortigate-sslvpn-settings.png" alt="SSL VPN Settings"></p>
+<div class="note info"><p>早期的 FortiGate 版本， <code>Negate Source</code> 只能在 <code>CLI</code> 設定。</p>
+</div>
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>Sam Chen
+  </li>
+  <li class="post-copyright-link">
+      <strong>文章連結：</strong>
+      <a href="https://silent198214.github.io/fortinet/feed-rbl-iplist-protect-itself/" title="FortiGate protect self service via External Connectors">https://silent198214.github.io/fortinet/feed-rbl-iplist-protect-itself/</a>
+  </li>
+  <li class="post-copyright-license">
+      <strong>版權聲明： </strong>本網誌所有文章除特別聲明外，均採用 <span class="exturl" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC8="><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</span> 許可協議。轉載請註明出處！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/CyberSecurity/" rel="tag"># CyberSecurity</a>
+              <a href="/tags/FortiGate/" rel="tag"># FortiGate</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/fortinet/automation-webhook-error/" rel="prev" title="FortiGate automation webhook return curl perform error for Github API">
+                  <i class="fa fa-angle-left"></i> FortiGate automation webhook return curl perform error for Github API
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/fortinet/automation-collect-malicious-ip/" rel="next" title="Use FortiGate Automation to collect malicious IP with GitHub">
+                  Use FortiGate Automation to collect malicious IP with GitHub <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2015 – 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Sam Chen</span>
+  </div>
+  <div class="powered-by">由 <span class="exturl" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl" data-url="aHR0cHM6Ly90aGVtZS1uZXh0LmpzLm9yZw==">NexT.Gemini</span> 強力驅動
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="回到頂端">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.31/fancybox/fancybox.umd.js" integrity="sha256-a+H7FYzJv6oU2hfsfDGM2Ohw/cR9v+hPfxHCLdmCrE8=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+  <script src="/js/third-party/fancybox.js"></script>
+
+
+
+  
+
+
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/quicklink/2.3.0/quicklink.umd.js" integrity="sha256-yvJQOINiH9fWemHn0vCA5lsHWJaHs6/ZmO+1Ft04SvM=" crossorigin="anonymous"></script>
+  <script class="next-config" data-name="quicklink" type="application/json">{"enable":true,"home":true,"archive":true,"delay":true,"timeout":3000,"priority":true,"url":"https://silent198214.github.io/fortinet/feed-rbl-iplist-protect-itself/"}</script>
+  <script src="/js/third-party/quicklink.js"></script>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"silent198214/silent198214.github.io","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js"></script>
+
+</body>
+</html>

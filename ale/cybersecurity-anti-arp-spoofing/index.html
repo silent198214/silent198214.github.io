@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="po7J7mJmPnFy18jHjTQq1NrsexKsVfZYl0zy84hP08s">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha256-5eIC48iZUHmSlSUz9XtjRyK2mzQkHScZY1WdMaoz74E=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.31/fancybox/fancybox.css" integrity="sha256-gkQVf8UKZgQ0HyuxL/VnacadJ+D2Kox2TCEBuNQg5+w=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"silent198214.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.21.1","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":false,"copycode":{"enable":true,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":false,"lazyload":true,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":false,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜尋...","empty":"我們無法找到任何有關 ${query} 的搜索結果","hits_time":"找到 ${hits} 個搜索結果（用時 ${time} 毫秒）","hits":"找到 ${hits} 個搜索結果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="ARP Spoofing(ARP Poisoning)是一個還蠻古老的中間人攻擊手法Man-in-the-middle attack (MITM)，利用ARP的特性來欺騙受害者將所有流量轉向攻擊者指定的裝置，進行側錄封包來竊取可用的資訊，並轉送真正的目的端，受害者完全不知道自己的流量被攔截。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Anti ARP Spoofing of OmniSwitch">
+<meta property="og:url" content="https://silent198214.github.io/ale/cybersecurity-anti-arp-spoofing/">
+<meta property="og:site_name" content="山姆的 IT 日常">
+<meta property="og:description" content="ARP Spoofing(ARP Poisoning)是一個還蠻古老的中間人攻擊手法Man-in-the-middle attack (MITM)，利用ARP的特性來欺騙受害者將所有流量轉向攻擊者指定的裝置，進行側錄封包來竊取可用的資訊，並轉送真正的目的端，受害者完全不知道自己的流量被攔截。">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2021-05-13T02:48:24.000Z">
+<meta property="article:modified_time" content="2021-05-13T02:48:24.000Z">
+<meta property="article:author" content="Sam Chen">
+<meta property="article:tag" content="CyberSecurity">
+<meta property="article:tag" content="OmniSwitch">
+<meta property="article:tag" content="ALE">
+<meta property="article:tag" content="ARP Spoofing">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://silent198214.github.io/ale/cybersecurity-anti-arp-spoofing/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-TW","comments":true,"permalink":"https://silent198214.github.io/ale/cybersecurity-anti-arp-spoofing/","path":"ale/cybersecurity-anti-arp-spoofing/","title":"Anti ARP Spoofing of OmniSwitch"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Anti ARP Spoofing of OmniSwitch | 山姆的 IT 日常</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-8K41M2BW4P"></script>
+  <script class="next-config" data-name="google_analytics" type="application/json">{"tracking_id":"G-8K41M2BW4P","only_pageview":false,"measure_protocol_api_secret":null}</script>
+  <script src="/js/third-party/analytics/google-analytics.js"></script>
+
+
+
+  <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{&quot;token&quot;: &quot;376b1ae59fa7423797c15d59469ee4e4&quot;}'></script>
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切換導航欄" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">山姆的 IT 日常</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">Networking / Devops</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜尋" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首頁</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>標籤</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分類</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>歸檔</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目錄
+        </li>
+        <li class="sidebar-nav-overview">
+          本站概要
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%A6%E4%BD%9C"><span class="nav-number">1.</span> <span class="nav-text">實作</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%98%BB%E6%96%B7%E6%95%88%E6%9E%9C"><span class="nav-number">1.1.</span> <span class="nav-text">阻斷效果</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Sam Chen"
+      src="https://github.com/silent198214.png">
+  <p class="site-author-name" itemprop="name">Sam Chen</p>
+  <div class="site-description" itemprop="description">努力的走在 IT 這條漫長的道路上</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">35</span>
+          <span class="site-state-item-name">文章</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分類</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">標籤</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL3NpbGVudDE5ODIxNA==" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;silent198214"><i class="fab fa-github fa-lg fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cubGlua2VkaW4uY29tL2luL3NhbTE5ODIv" title="Linkedin → https:&#x2F;&#x2F;www.linkedin.com&#x2F;in&#x2F;sam1982&#x2F;"><i class="fab fa-linkedin-in fa-fw"></i>Linkedin</span>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-TW">
+    <link itemprop="mainEntityOfPage" href="https://silent198214.github.io/ale/cybersecurity-anti-arp-spoofing/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://github.com/silent198214.png">
+      <meta itemprop="name" content="Sam Chen">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="山姆的 IT 日常">
+      <meta itemprop="description" content="努力的走在 IT 這條漫長的道路上">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Anti ARP Spoofing of OmniSwitch | 山姆的 IT 日常">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Anti ARP Spoofing of OmniSwitch
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">發表於</span>
+
+      <time title="創建時間：2021-05-13 10:48:24" itemprop="dateCreated datePublished" datetime="2021-05-13T10:48:24+08:00">2021-05-13</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分類於</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/ale/" itemprop="url" rel="index"><span itemprop="name">ale</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>ARP Spoofing(ARP Poisoning)是一個還蠻古老的中間人攻擊手法<code>Man-in-the-middle attack (MITM)</code>，利用ARP的特性來欺騙受害者將所有流量轉向攻擊者指定的裝置，進行側錄封包來竊取可用的資訊，並轉送真正的目的端，受害者完全不知道自己的流量被攔截。</p>
+<span id="more"></span>
+<p>OmniSwitch可以透過內建的<code>ACL Security Features</code>-<code>UserPorts</code>來反制這個攻擊。</p>
+<div class="note warning"><p>OmniSwitch必須要建立ip interface來學習VLAN的subnet，利用學習到的資訊與ARP Request的封包加以比對確認是否為spoofing的攻擊。</p>
+</div>
+<h2 id="實作">實作</h2>
+<p>假設port 1/2接入的是一般用途的裝置(例如PC, NB)，我們可以將他定義成UserPorts</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">-&gt; policy port group UserPorts 1/2</span><br><span class="line">-&gt; qos apply</span><br></pre></td></tr></table></figure>
+<div class="note info"><p>user-port filter預設啟動spoof</p>
+</div>
+<p>如果加上<code>user-port shutdown</code>的參數，會一併將Port進行shutdown，完全阻斷攻擊封包。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">-&gt; qos user-port shutdown spoof</span><br><span class="line">-&gt; qos apply</span><br></pre></td></tr></table></figure>
+<h3 id="阻斷效果">阻斷效果</h3>
+<p>當OmniSwitch偵測到ARP Spoofing時，會直接進行port shutdown，<code>Violations</code>欄位會出現<strong>QoS</strong>的狀態。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">-&gt; show interfaces port </span><br><span class="line">Legends: WTR - Wait To Restore</span><br><span class="line">         <span class="comment">#   - WTR Timer is Running &amp; Port is in wait-to-restore state</span></span><br><span class="line">         *   - Permanent Shutdown</span><br><span class="line"></span><br><span class="line">Slot/    Admin     Link    Violations  Recovery   Recovery      WTR            Alias</span><br><span class="line">Port     Status   Status                 Time       Max        (sec)</span><br><span class="line">------+----------+---------+----------+----------+----------+----------+-----------------------------------------</span><br><span class="line">  1/1    <span class="built_in">enable</span>      down      none           300         10          0 <span class="string">&quot;&quot;</span></span><br><span class="line">  1/2    <span class="built_in">enable</span>      down      QoS            300         10          0 <span class="string">&quot;&quot;</span></span><br><span class="line">  1/3    <span class="built_in">enable</span>      down      none           300         10          0 <span class="string">&quot;&quot;</span></span><br><span class="line">  1/4    <span class="built_in">enable</span>      down      none           300         10          0 <span class="string">&quot;&quot;</span></span><br><span class="line">  1/5    <span class="built_in">enable</span>      down      none           300         10          0 <span class="string">&quot;&quot;</span></span><br></pre></td></tr></table></figure>
+<p>執行<code>interfaces clear-violation-all</code>指令，即可將該port恢復運作。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">-&gt; interfaces 1/2 clear-violation-all</span><br><span class="line"></span><br><span class="line">-&gt; show interfaces port              </span><br><span class="line">Legends: WTR - Wait To Restore</span><br><span class="line">         <span class="comment">#   - WTR Timer is Running &amp; Port is in wait-to-restore state</span></span><br><span class="line">         *   - Permanent Shutdown</span><br><span class="line"></span><br><span class="line">Slot/    Admin     Link    Violations  Recovery   Recovery      WTR            Alias</span><br><span class="line">Port     Status   Status                 Time       Max        (sec)</span><br><span class="line">------+----------+---------+----------+----------+----------+----------+-----------------------------------------</span><br><span class="line">  1/1    <span class="built_in">enable</span>      down      none           300         10          0 <span class="string">&quot;&quot;</span></span><br><span class="line">  1/2    <span class="built_in">enable</span>      up        none           300         10          0 <span class="string">&quot;&quot;</span></span><br><span class="line">  1/3    <span class="built_in">enable</span>      down      none           300         10          0 <span class="string">&quot;&quot;</span></span><br><span class="line">  1/4    <span class="built_in">enable</span>      down      none           300         10          0 <span class="string">&quot;&quot;</span></span><br><span class="line">  1/5    <span class="built_in">enable</span>      down      none           300         10          0 <span class="string">&quot;&quot;</span></span><br></pre></td></tr></table></figure>
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>Sam Chen
+  </li>
+  <li class="post-copyright-link">
+      <strong>文章連結：</strong>
+      <a href="https://silent198214.github.io/ale/cybersecurity-anti-arp-spoofing/" title="Anti ARP Spoofing of OmniSwitch">https://silent198214.github.io/ale/cybersecurity-anti-arp-spoofing/</a>
+  </li>
+  <li class="post-copyright-license">
+      <strong>版權聲明： </strong>本網誌所有文章除特別聲明外，均採用 <span class="exturl" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC8="><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</span> 許可協議。轉載請註明出處！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/CyberSecurity/" rel="tag"># CyberSecurity</a>
+              <a href="/tags/OmniSwitch/" rel="tag"># OmniSwitch</a>
+              <a href="/tags/ALE/" rel="tag"># ALE</a>
+              <a href="/tags/ARP-Spoofing/" rel="tag"># ARP Spoofing</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/ale/vc-basic-config/" rel="prev" title="ALE Virtual Chassis Basic Configuration">
+                  <i class="fa fa-angle-left"></i> ALE Virtual Chassis Basic Configuration
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/ale/cybersecurity-port-isolation/" rel="next" title="Port Isolation of OmniSwitch">
+                  Port Isolation of OmniSwitch <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2015 – 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Sam Chen</span>
+  </div>
+  <div class="powered-by">由 <span class="exturl" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl" data-url="aHR0cHM6Ly90aGVtZS1uZXh0LmpzLm9yZw==">NexT.Gemini</span> 強力驅動
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="回到頂端">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.31/fancybox/fancybox.umd.js" integrity="sha256-a+H7FYzJv6oU2hfsfDGM2Ohw/cR9v+hPfxHCLdmCrE8=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+  <script src="/js/third-party/fancybox.js"></script>
+
+
+
+  
+
+
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/quicklink/2.3.0/quicklink.umd.js" integrity="sha256-yvJQOINiH9fWemHn0vCA5lsHWJaHs6/ZmO+1Ft04SvM=" crossorigin="anonymous"></script>
+  <script class="next-config" data-name="quicklink" type="application/json">{"enable":true,"home":true,"archive":true,"delay":true,"timeout":3000,"priority":true,"url":"https://silent198214.github.io/ale/cybersecurity-anti-arp-spoofing/"}</script>
+  <script src="/js/third-party/quicklink.js"></script>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"silent198214/silent198214.github.io","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js"></script>
+
+</body>
+</html>
