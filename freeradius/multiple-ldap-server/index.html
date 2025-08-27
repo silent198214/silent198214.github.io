@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="po7J7mJmPnFy18jHjTQq1NrsexKsVfZYl0zy84hP08s">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha256-5eIC48iZUHmSlSUz9XtjRyK2mzQkHScZY1WdMaoz74E=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.31/fancybox/fancybox.css" integrity="sha256-gkQVf8UKZgQ0HyuxL/VnacadJ+D2Kox2TCEBuNQg5+w=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"silent198214.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.21.1","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":false,"copycode":{"enable":true,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":false,"lazyload":true,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":false,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜尋...","empty":"我們無法找到任何有關 ${query} 的搜索結果","hits_time":"找到 ${hits} 個搜索結果（用時 ${time} 毫秒）","hits":"找到 ${hits} 個搜索結果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="當環境裡面有多個Active Directory&#x2F;LDAP Server，並且存在不同Domain，身份驗證需要輪詢所有的Server時，會有以下條件需要達成：">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Multiple LDAP server in FreeRADIUS">
+<meta property="og:url" content="https://silent198214.github.io/freeradius/multiple-ldap-server/">
+<meta property="og:site_name" content="山姆的 IT 日常">
+<meta property="og:description" content="當環境裡面有多個Active Directory&#x2F;LDAP Server，並且存在不同Domain，身份驗證需要輪詢所有的Server時，會有以下條件需要達成：">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2021-02-12T04:22:30.000Z">
+<meta property="article:modified_time" content="2021-02-12T04:22:30.000Z">
+<meta property="article:author" content="Sam Chen">
+<meta property="article:tag" content="FreeRADIUS">
+<meta property="article:tag" content="LDAP">
+<meta property="article:tag" content="unlang">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://silent198214.github.io/freeradius/multiple-ldap-server/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-TW","comments":true,"permalink":"https://silent198214.github.io/freeradius/multiple-ldap-server/","path":"freeradius/multiple-ldap-server/","title":"Multiple LDAP server in FreeRADIUS"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Multiple LDAP server in FreeRADIUS | 山姆的 IT 日常</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-8K41M2BW4P"></script>
+  <script class="next-config" data-name="google_analytics" type="application/json">{"tracking_id":"G-8K41M2BW4P","only_pageview":false,"measure_protocol_api_secret":null}</script>
+  <script src="/js/third-party/analytics/google-analytics.js"></script>
+
+
+
+  <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{&quot;token&quot;: &quot;376b1ae59fa7423797c15d59469ee4e4&quot;}'></script>
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切換導航欄" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">山姆的 IT 日常</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">Networking / Devops</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜尋" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首頁</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>標籤</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分類</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>歸檔</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目錄
+        </li>
+        <li class="sidebar-nav-overview">
+          本站概要
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#mods-available-ldap"><span class="nav-number">1.</span> <span class="nav-text">mods-available&#x2F;ldap</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#policy-d-ldap"><span class="nav-number">2.</span> <span class="nav-text">policy.d&#x2F;ldap</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sites-available-default"><span class="nav-number">3.</span> <span class="nav-text">sites-available&#x2F;default</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#authorize-section"><span class="nav-number">3.1.</span> <span class="nav-text">authorize section</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#authenticate-secion"><span class="nav-number">3.2.</span> <span class="nav-text">authenticate secion</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B5%90%E8%AB%96"><span class="nav-number">4.</span> <span class="nav-text">結論</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Reference"><span class="nav-number">5.</span> <span class="nav-text">Reference</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Sam Chen"
+      src="https://github.com/silent198214.png">
+  <p class="site-author-name" itemprop="name">Sam Chen</p>
+  <div class="site-description" itemprop="description">努力的走在 IT 這條漫長的道路上</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">35</span>
+          <span class="site-state-item-name">文章</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分類</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">標籤</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL3NpbGVudDE5ODIxNA==" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;silent198214"><i class="fab fa-github fa-lg fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cubGlua2VkaW4uY29tL2luL3NhbTE5ODIv" title="Linkedin → https:&#x2F;&#x2F;www.linkedin.com&#x2F;in&#x2F;sam1982&#x2F;"><i class="fab fa-linkedin-in fa-fw"></i>Linkedin</span>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-TW">
+    <link itemprop="mainEntityOfPage" href="https://silent198214.github.io/freeradius/multiple-ldap-server/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://github.com/silent198214.png">
+      <meta itemprop="name" content="Sam Chen">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="山姆的 IT 日常">
+      <meta itemprop="description" content="努力的走在 IT 這條漫長的道路上">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Multiple LDAP server in FreeRADIUS | 山姆的 IT 日常">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Multiple LDAP server in FreeRADIUS
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">發表於</span>
+
+      <time title="創建時間：2021-02-12 12:22:30" itemprop="dateCreated datePublished" datetime="2021-02-12T12:22:30+08:00">2021-02-12</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分類於</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/freeradius/" itemprop="url" rel="index"><span itemprop="name">freeradius</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>當環境裡面有多個Active Directory/LDAP Server，並且存在不同Domain，身份驗證需要輪詢所有的Server時，會有以下條件需要達成：</p>
+<span id="more"></span>
+<ul>
+<li>帳號需要依據<code>順序</code>向每個Active Directory/LDAP Server進行驗證</li>
+<li>當<code>驗證失敗</code>時需要向<code>下一台</code>Active Directory/LDAP Server驗證</li>
+<li><code>驗證成功</code>後要<code>離開驗證程序</code></li>
+</ul>
+<h2 id="mods-available-ldap">mods-available/ldap</h2>
+<p>將每個ldap server加入。</p>
+<figure class="highlight toml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line">ldap ldap1 &#123;</span><br><span class="line">    <span class="attr">server</span> = <span class="string">&#x27;ldap1&#x27;</span></span><br><span class="line">    <span class="attr">identity</span> = <span class="string">&#x27;cn=admin,dc=ldap1,dc=local&#x27;</span></span><br><span class="line">    <span class="attr">password</span> = <span class="string">&#x27;&lt;admin password&gt;&#x27;</span></span><br><span class="line">    <span class="attr">base_dn</span> = <span class="string">&#x27;dc=ldap1,dc=local&#x27;</span></span><br><span class="line">    user &#123;</span><br><span class="line">        <span class="attr">base_dn</span> = <span class="string">&quot;$&#123;..base_dn&#125;&quot;</span></span><br><span class="line">        <span class="attr">filter</span> = <span class="string">&quot;(cn=%&#123;%&#123;Stripped-User-Name&#125;:-%&#123;User-Name&#125;&#125;)&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">    pool &#123;</span><br><span class="line">        <span class="attr">start</span> = <span class="number">0</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">ldap ldap2 &#123;</span><br><span class="line">    <span class="attr">server</span> = <span class="string">&quot;ldap2&quot;</span></span><br><span class="line">    <span class="attr">identity</span> = <span class="string">&quot;cn=admin,dc=ldap2,dc=local&quot;</span></span><br><span class="line">    <span class="attr">password</span> = <span class="string">&quot;&lt;admin password&gt;&quot;</span></span><br><span class="line">    <span class="attr">base_dn</span> = <span class="string">&quot;dc=ldap2,dc=local&quot;</span></span><br><span class="line">    user &#123;</span><br><span class="line">        <span class="attr">base_dn</span> = <span class="string">&quot;$&#123;..base_dn&#125;&quot;</span></span><br><span class="line">        <span class="attr">filter</span> = <span class="string">&quot;(cn=%&#123;%&#123;Stripped-User-Name&#125;:-%&#123;User-Name&#125;&#125;)&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">    pool &#123;</span><br><span class="line">        <span class="attr">start</span> = <span class="number">0</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">ldap ldap3 &#123;</span><br><span class="line">    <span class="attr">server</span> = <span class="string">&quot;ldap3&quot;</span></span><br><span class="line">    <span class="attr">identity</span> = <span class="string">&quot;cn=admin,dc=ldap3,dc=local&quot;</span></span><br><span class="line">    <span class="attr">password</span> = <span class="string">&quot;&lt;admin password&gt;&quot;</span></span><br><span class="line">    <span class="attr">base_dn</span> = <span class="string">&quot;dc=ldap3,dc=local&quot;</span></span><br><span class="line">    user &#123;</span><br><span class="line">        <span class="attr">base_dn</span> = <span class="string">&quot;$&#123;..base_dn&#125;&quot;</span></span><br><span class="line">        <span class="attr">filter</span> = <span class="string">&quot;(cn=%&#123;%&#123;Stripped-User-Name&#125;:-%&#123;User-Name&#125;&#125;)&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">    pool &#123;</span><br><span class="line">        <span class="attr">start</span> = <span class="number">0</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">ldap ldap4 &#123;</span><br><span class="line">    <span class="attr">server</span> = <span class="string">&quot;ldap4&quot;</span></span><br><span class="line">    <span class="attr">identity</span> = <span class="string">&quot;cn=admin,dc=ldap4,dc=local&quot;</span></span><br><span class="line">    <span class="attr">password</span> = <span class="string">&quot;&lt;admin password&gt;&quot;</span></span><br><span class="line">    <span class="attr">base_dn</span> = <span class="string">&quot;dc=ldap4,dc=local&quot;</span></span><br><span class="line">    user &#123;</span><br><span class="line">        <span class="attr">base_dn</span> = <span class="string">&quot;$&#123;..base_dn&#125;&quot;</span></span><br><span class="line">        <span class="attr">filter</span> = <span class="string">&quot;(cn=%&#123;%&#123;Stripped-User-Name&#125;:-%&#123;User-Name&#125;&#125;)&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">    pool &#123;</span><br><span class="line">        <span class="attr">start</span> = <span class="number">0</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>預設pool裡面start的值是<code>5</code>，意思是啟動freeradius過程時會建立5個threads。<br>
+這裡改成<code>0</code>的用意是避免在freeradius啟動前，ldap server已無法正常運作，會造成freeradius啟動失敗。</p>
+</blockquote>
+<h2 id="policy-d-ldap">policy.d/ldap</h2>
+<p>加入ldap authorize policy。</p>
+<figure class="highlight toml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">ldap.authorize &#123;</span><br><span class="line">    if (User-Password &amp;&amp; !control:Auth-Type) &#123;</span><br><span class="line">        update control &#123;</span><br><span class="line">            Auth-Type := LDAP</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="sites-available-default">sites-available/default</h2>
+<h3 id="authorize-section">authorize section</h3>
+<p>replace <code>-ldap</code> to <code>ldap</code></p>
+<figure class="highlight toml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">authorize &#123;</span><br><span class="line">    <span class="comment">#</span></span><br><span class="line">    <span class="comment">#  The ldap module reads passwords from the LDAP database.</span></span><br><span class="line"><span class="comment">#    -ldap</span></span><br><span class="line">    ldap</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="authenticate-secion">authenticate secion</h3>
+<figure class="highlight toml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">authenticate &#123;</span><br><span class="line">    Auth-Type LDAP &#123;</span><br><span class="line">        group &#123;</span><br><span class="line">            ldap1 &#123;</span><br><span class="line">                <span class="attr">fail</span> = <span class="number">1</span></span><br><span class="line">                <span class="attr">reject</span> = <span class="number">1</span></span><br><span class="line">                <span class="attr">notfound</span> = <span class="number">1</span></span><br><span class="line">                <span class="attr">ok</span> = return</span><br><span class="line">            &#125;</span><br><span class="line">            ldap2 &#123;</span><br><span class="line">                <span class="attr">fail</span> = <span class="number">1</span></span><br><span class="line">                <span class="attr">reject</span> = <span class="number">1</span></span><br><span class="line">                <span class="attr">notfound</span> = <span class="number">1</span></span><br><span class="line">                <span class="attr">ok</span> = return</span><br><span class="line">            &#125;</span><br><span class="line">            ldap3 &#123;</span><br><span class="line">                <span class="attr">fail</span> = <span class="number">1</span></span><br><span class="line">                <span class="attr">reject</span> = <span class="number">1</span></span><br><span class="line">                <span class="attr">notfound</span> = <span class="number">1</span></span><br><span class="line">                <span class="attr">ok</span> = return</span><br><span class="line">            &#125;</span><br><span class="line">            ldap4 &#123;</span><br><span class="line">                <span class="attr">fail</span> = <span class="number">1</span></span><br><span class="line">                <span class="attr">reject</span> = <span class="number">1</span></span><br><span class="line">                <span class="attr">notfound</span> = <span class="number">1</span></span><br><span class="line">                <span class="attr">ok</span> = return</span><br><span class="line">            &#125;</span><br><span class="line">            handled</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>這裡運用到<code>unlang</code>語法，並且使用 <span class="exturl" data-url="aHR0cHM6Ly9uZXR3b3JrcmFkaXVzLmNvbS9kb2MvY3VycmVudC91bmxhbmcvZ3JvdXAuaHRtbA==">group<i class="fa fa-external-link-alt"></i></span> 這個statement，在這個<code>group</code>裡面的服務均會循序執行。</p>
+<p>另外在每個ldap裡面會看到4個<code>return code</code></p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">rcode</th>
+<th style="text-align:center">vaule(priority)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">fail</td>
+<td style="text-align:center">1</td>
+</tr>
+<tr>
+<td style="text-align:center">reject</td>
+<td style="text-align:center">1</td>
+</tr>
+<tr>
+<td style="text-align:center">notfound</td>
+<td style="text-align:center">1</td>
+</tr>
+<tr>
+<td style="text-align:center">ok</td>
+<td style="text-align:center">return</td>
+</tr>
+</tbody>
+</table>
+<p><code>priority</code>數值越高，則 <strong>優先執行</strong>，而<code>return</code>為 <strong>跳出(break)</strong> 這個group statement。</p>
+<blockquote>
+<p>將priority設定為<code>1</code>可以避免觸發break機制。</p>
+</blockquote>
+<p><code>handled</code>則表示已完成所有request。</p>
+<h2 id="結論">結論</h2>
+<p>這樣的方式畢竟是因環境的限制而產生的應用，當其中一個instance(ldap)無法服務，就會拖累下一個instance，讓整個身份驗證變慢，進而觸發access-request timeout，所以需要特別注意。</p>
+<h2 id="Reference">Reference</h2>
+<ul>
+<li><span class="exturl" data-url="aHR0cHM6Ly9uZXR3b3JrcmFkaXVzLmNvbS9kb2MvY3VycmVudC91bmxhbmcvZ3JvdXAuaHRtbA==">https://networkradius.com/doc/current/unlang/group.html<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly9uZXR3b3JrcmFkaXVzLmNvbS9kb2MvY3VycmVudC9yYWRkYi9tb2RzLWF2YWlsYWJsZS9hbHdheXMuaHRtbA==">https://networkradius.com/doc/current/raddb/mods-available/always.html<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly9uZXR3b3JrcmFkaXVzLmNvbS9kb2MvY3VycmVudC91bmxhbmcvZmFpbG92ZXJfdGFibGUuaHRtbA==">https://networkradius.com/doc/current/unlang/failover_table.html<i class="fa fa-external-link-alt"></i></span></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>Sam Chen
+  </li>
+  <li class="post-copyright-link">
+      <strong>文章連結：</strong>
+      <a href="https://silent198214.github.io/freeradius/multiple-ldap-server/" title="Multiple LDAP server in FreeRADIUS">https://silent198214.github.io/freeradius/multiple-ldap-server/</a>
+  </li>
+  <li class="post-copyright-license">
+      <strong>版權聲明： </strong>本網誌所有文章除特別聲明外，均採用 <span class="exturl" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC8="><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</span> 許可協議。轉載請註明出處！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/FreeRADIUS/" rel="tag"># FreeRADIUS</a>
+              <a href="/tags/LDAP/" rel="tag"># LDAP</a>
+              <a href="/tags/unlang/" rel="tag"># unlang</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/freeradius/ldap-search-timeout/" rel="prev" title="LDAP search failed(timeout) with FreeRADIUS LDAP module">
+                  <i class="fa fa-angle-left"></i> LDAP search failed(timeout) with FreeRADIUS LDAP module
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/cisco/firepower-tips-vi-not-found/" rel="next" title="vi not found issue on Cisco Firepower">
+                  vi not found issue on Cisco Firepower <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2015 – 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Sam Chen</span>
+  </div>
+  <div class="powered-by">由 <span class="exturl" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl" data-url="aHR0cHM6Ly90aGVtZS1uZXh0LmpzLm9yZw==">NexT.Gemini</span> 強力驅動
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="回到頂端">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.31/fancybox/fancybox.umd.js" integrity="sha256-a+H7FYzJv6oU2hfsfDGM2Ohw/cR9v+hPfxHCLdmCrE8=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+  <script src="/js/third-party/fancybox.js"></script>
+
+
+
+  
+
+
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/quicklink/2.3.0/quicklink.umd.js" integrity="sha256-yvJQOINiH9fWemHn0vCA5lsHWJaHs6/ZmO+1Ft04SvM=" crossorigin="anonymous"></script>
+  <script class="next-config" data-name="quicklink" type="application/json">{"enable":true,"home":true,"archive":true,"delay":true,"timeout":3000,"priority":true,"url":"https://silent198214.github.io/freeradius/multiple-ldap-server/"}</script>
+  <script src="/js/third-party/quicklink.js"></script>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"silent198214/silent198214.github.io","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js"></script>
+
+</body>
+</html>

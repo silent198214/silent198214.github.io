@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="po7J7mJmPnFy18jHjTQq1NrsexKsVfZYl0zy84hP08s">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha256-5eIC48iZUHmSlSUz9XtjRyK2mzQkHScZY1WdMaoz74E=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.31/fancybox/fancybox.css" integrity="sha256-gkQVf8UKZgQ0HyuxL/VnacadJ+D2Kox2TCEBuNQg5+w=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"silent198214.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.21.1","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":false,"copycode":{"enable":true,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":false,"lazyload":true,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":false,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜尋...","empty":"我們無法找到任何有關 ${query} 的搜索結果","hits_time":"找到 ${hits} 個搜索結果（用時 ${time} 毫秒）","hits":"找到 ${hits} 個搜索結果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="當環境是使用Active Directory，且 domain 不只有一個的時候，就蠻常遇到以下狀況：">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LDAP search failed(timeout) with FreeRADIUS LDAP module">
+<meta property="og:url" content="https://silent198214.github.io/freeradius/ldap-search-timeout/">
+<meta property="og:site_name" content="山姆的 IT 日常">
+<meta property="og:description" content="當環境是使用Active Directory，且 domain 不只有一個的時候，就蠻常遇到以下狀況：">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2021-02-09T06:08:18.000Z">
+<meta property="article:modified_time" content="2021-02-09T06:08:18.000Z">
+<meta property="article:author" content="Sam Chen">
+<meta property="article:tag" content="FreeRADIUS">
+<meta property="article:tag" content="Active Directory">
+<meta property="article:tag" content="LDAP">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://silent198214.github.io/freeradius/ldap-search-timeout/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-TW","comments":true,"permalink":"https://silent198214.github.io/freeradius/ldap-search-timeout/","path":"freeradius/ldap-search-timeout/","title":"LDAP search failed(timeout) with FreeRADIUS LDAP module"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>LDAP search failed(timeout) with FreeRADIUS LDAP module | 山姆的 IT 日常</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-8K41M2BW4P"></script>
+  <script class="next-config" data-name="google_analytics" type="application/json">{"tracking_id":"G-8K41M2BW4P","only_pageview":false,"measure_protocol_api_secret":null}</script>
+  <script src="/js/third-party/analytics/google-analytics.js"></script>
+
+
+
+  <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{&quot;token&quot;: &quot;376b1ae59fa7423797c15d59469ee4e4&quot;}'></script>
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切換導航欄" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">山姆的 IT 日常</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">Networking / Devops</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜尋" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首頁</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>標籤</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分類</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>歸檔</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-overview-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目錄
+        </li>
+        <li class="sidebar-nav-overview">
+          本站概要
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Sam Chen"
+      src="https://github.com/silent198214.png">
+  <p class="site-author-name" itemprop="name">Sam Chen</p>
+  <div class="site-description" itemprop="description">努力的走在 IT 這條漫長的道路上</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">35</span>
+          <span class="site-state-item-name">文章</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分類</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">標籤</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL3NpbGVudDE5ODIxNA==" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;silent198214"><i class="fab fa-github fa-lg fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cubGlua2VkaW4uY29tL2luL3NhbTE5ODIv" title="Linkedin → https:&#x2F;&#x2F;www.linkedin.com&#x2F;in&#x2F;sam1982&#x2F;"><i class="fab fa-linkedin-in fa-fw"></i>Linkedin</span>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-TW">
+    <link itemprop="mainEntityOfPage" href="https://silent198214.github.io/freeradius/ldap-search-timeout/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://github.com/silent198214.png">
+      <meta itemprop="name" content="Sam Chen">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="山姆的 IT 日常">
+      <meta itemprop="description" content="努力的走在 IT 這條漫長的道路上">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="LDAP search failed(timeout) with FreeRADIUS LDAP module | 山姆的 IT 日常">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LDAP search failed(timeout) with FreeRADIUS LDAP module
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">發表於</span>
+
+      <time title="創建時間：2021-02-09 14:08:18" itemprop="dateCreated datePublished" datetime="2021-02-09T14:08:18+08:00">2021-02-09</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分類於</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/freeradius/" itemprop="url" rel="index"><span itemprop="name">freeradius</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>當環境是使用<code>Active Directory</code>，且 domain 不只有一個的時候，就蠻常遇到以下狀況：</p>
+<span id="more"></span>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Bind successful</span><br><span class="line">WARNING Search failed: Time out while waiting for server to respond. Got new socket, retrying...</span><br></pre></td></tr></table></figure>
+<p>Freeradius log顯示admin bind為成功，但是要做ldap search卻<code>failed(timeout)</code>。</p>
+<p>在<code>mods-available/ldap</code>設定檔中可以看到官方說明</p>
+<figure class="highlight toml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">options &#123;</span><br><span class="line">        ...</span><br><span class="line">        <span class="comment">#</span></span><br><span class="line">        <span class="comment">#  The following two configuration items control whether the</span></span><br><span class="line">        <span class="comment">#  server follows references returned by LDAP directory.</span></span><br><span class="line">        <span class="comment">#  They are  mostly for Active Directory compatibility.</span></span><br><span class="line">        <span class="comment">#  If you set these to &#x27;no&#x27;, then searches will likely return</span></span><br><span class="line">        <span class="comment">#  &#x27;operations error&#x27;, instead of a useful result.</span></span><br><span class="line">        <span class="comment">#</span></span><br><span class="line">        <span class="attr">chase_referrals</span> = <span class="literal">yes</span></span><br><span class="line">        <span class="attr">rebind</span> = <span class="literal">yes</span></span><br><span class="line"></span><br><span class="line">...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>這兩個參數可以加強Active Directory的<code>相容性</code>，但是<code>chase_referrals</code>在<code>多網域</code>的環境底下反而會造成ldap查詢逾時。</p>
+<p>所以可在<code>options</code>裡面加入<code>chase_referrals = no</code>這個參數。</p>
+<figure class="highlight toml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">ldap win-AD &#123;</span><br><span class="line">    <span class="attr">server</span> = <span class="string">&#x27;winad.local&#x27;</span></span><br><span class="line">    <span class="attr">identity</span> = <span class="string">&#x27;cn=admin,dc=winad,dc=local&#x27;</span></span><br><span class="line">    <span class="attr">password</span> = <span class="string">&#x27;&lt;admin password&gt;&#x27;</span></span><br><span class="line">    <span class="attr">base_dn</span> = <span class="string">&#x27;dc=winad,dc=local&#x27;</span></span><br><span class="line">    user &#123;</span><br><span class="line">        <span class="attr">base_dn</span> = <span class="string">&quot;$&#123;..base_dn&#125;&quot;</span></span><br><span class="line">        <span class="attr">filter</span> = <span class="string">&quot;(cn=%&#123;%&#123;Stripped-User-Name&#125;:-%&#123;User-Name&#125;&#125;)&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">    options &#123;</span><br><span class="line">        <span class="attr">chase_referrals</span> = <span class="literal">no</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>這樣查詢就會恢復正常。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>Sam Chen
+  </li>
+  <li class="post-copyright-link">
+      <strong>文章連結：</strong>
+      <a href="https://silent198214.github.io/freeradius/ldap-search-timeout/" title="LDAP search failed(timeout) with FreeRADIUS LDAP module">https://silent198214.github.io/freeradius/ldap-search-timeout/</a>
+  </li>
+  <li class="post-copyright-license">
+      <strong>版權聲明： </strong>本網誌所有文章除特別聲明外，均採用 <span class="exturl" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC8="><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</span> 許可協議。轉載請註明出處！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/FreeRADIUS/" rel="tag"># FreeRADIUS</a>
+              <a href="/tags/Active-Directory/" rel="tag"># Active Directory</a>
+              <a href="/tags/LDAP/" rel="tag"># LDAP</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/freeradius/integrate-ldap-pap/" rel="prev" title="FreeRADIUS 整合 LDAP over PAP 認證協定">
+                  <i class="fa fa-angle-left"></i> FreeRADIUS 整合 LDAP over PAP 認證協定
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/freeradius/multiple-ldap-server/" rel="next" title="Multiple LDAP server in FreeRADIUS">
+                  Multiple LDAP server in FreeRADIUS <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2015 – 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Sam Chen</span>
+  </div>
+  <div class="powered-by">由 <span class="exturl" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl" data-url="aHR0cHM6Ly90aGVtZS1uZXh0LmpzLm9yZw==">NexT.Gemini</span> 強力驅動
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="回到頂端">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.31/fancybox/fancybox.umd.js" integrity="sha256-a+H7FYzJv6oU2hfsfDGM2Ohw/cR9v+hPfxHCLdmCrE8=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+  <script src="/js/third-party/fancybox.js"></script>
+
+
+
+  
+
+
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/quicklink/2.3.0/quicklink.umd.js" integrity="sha256-yvJQOINiH9fWemHn0vCA5lsHWJaHs6/ZmO+1Ft04SvM=" crossorigin="anonymous"></script>
+  <script class="next-config" data-name="quicklink" type="application/json">{"enable":true,"home":true,"archive":true,"delay":true,"timeout":3000,"priority":true,"url":"https://silent198214.github.io/freeradius/ldap-search-timeout/"}</script>
+  <script src="/js/third-party/quicklink.js"></script>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"silent198214/silent198214.github.io","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js"></script>
+
+</body>
+</html>

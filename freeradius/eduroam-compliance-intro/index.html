@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="po7J7mJmPnFy18jHjTQq1NrsexKsVfZYl0zy84hP08s">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha256-5eIC48iZUHmSlSUz9XtjRyK2mzQkHScZY1WdMaoz74E=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.31/fancybox/fancybox.css" integrity="sha256-gkQVf8UKZgQ0HyuxL/VnacadJ+D2Kox2TCEBuNQg5+w=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"silent198214.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.21.1","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":false,"copycode":{"enable":true,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":false,"lazyload":true,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":false,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜尋...","empty":"我們無法找到任何有關 ${query} 的搜索結果","hits_time":"找到 ${hits} 個搜索結果（用時 ${time} 毫秒）","hits":"找到 ${hits} 個搜索結果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="先前有提到 eduroam 採用的是 RADIUS 及 802.1X 的技術，那麼這一篇來談談在 TANet 上面導入這項服務需要注意的一些事情。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="在 TANet 環境中導入 eduroam 前需要留意的事情">
+<meta property="og:url" content="https://silent198214.github.io/freeradius/eduroam-compliance-intro/">
+<meta property="og:site_name" content="山姆的 IT 日常">
+<meta property="og:description" content="先前有提到 eduroam 採用的是 RADIUS 及 802.1X 的技術，那麼這一篇來談談在 TANet 上面導入這項服務需要注意的一些事情。">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2024-10-02T02:00:00.000Z">
+<meta property="article:modified_time" content="2024-10-02T02:00:00.000Z">
+<meta property="article:author" content="Sam Chen">
+<meta property="article:tag" content="RADIUS">
+<meta property="article:tag" content="eduroam">
+<meta property="article:tag" content="compliance">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://silent198214.github.io/freeradius/eduroam-compliance-intro/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-TW","comments":true,"permalink":"https://silent198214.github.io/freeradius/eduroam-compliance-intro/","path":"freeradius/eduroam-compliance-intro/","title":"在 TANet 環境中導入 eduroam 前需要留意的事情"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>在 TANet 環境中導入 eduroam 前需要留意的事情 | 山姆的 IT 日常</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-8K41M2BW4P"></script>
+  <script class="next-config" data-name="google_analytics" type="application/json">{"tracking_id":"G-8K41M2BW4P","only_pageview":false,"measure_protocol_api_secret":null}</script>
+  <script src="/js/third-party/analytics/google-analytics.js"></script>
+
+
+
+  <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{&quot;token&quot;: &quot;376b1ae59fa7423797c15d59469ee4e4&quot;}'></script>
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切換導航欄" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">山姆的 IT 日常</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">Networking / Devops</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜尋" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首頁</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>標籤</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分類</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>歸檔</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目錄
+        </li>
+        <li class="sidebar-nav-overview">
+          本站概要
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%92%E8%89%B2"><span class="nav-number">1.</span> <span class="nav-text">角色</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8A%80%E8%A1%93%E5%90%88%E8%A6%8F%E6%96%87%E4%BB%B6"><span class="nav-number">2.</span> <span class="nav-text">技術合規文件</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Sam Chen"
+      src="https://github.com/silent198214.png">
+  <p class="site-author-name" itemprop="name">Sam Chen</p>
+  <div class="site-description" itemprop="description">努力的走在 IT 這條漫長的道路上</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">35</span>
+          <span class="site-state-item-name">文章</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分類</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">標籤</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL3NpbGVudDE5ODIxNA==" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;silent198214"><i class="fab fa-github fa-lg fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cubGlua2VkaW4uY29tL2luL3NhbTE5ODIv" title="Linkedin → https:&#x2F;&#x2F;www.linkedin.com&#x2F;in&#x2F;sam1982&#x2F;"><i class="fab fa-linkedin-in fa-fw"></i>Linkedin</span>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-TW">
+    <link itemprop="mainEntityOfPage" href="https://silent198214.github.io/freeradius/eduroam-compliance-intro/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://github.com/silent198214.png">
+      <meta itemprop="name" content="Sam Chen">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="山姆的 IT 日常">
+      <meta itemprop="description" content="努力的走在 IT 這條漫長的道路上">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="在 TANet 環境中導入 eduroam 前需要留意的事情 | 山姆的 IT 日常">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          在 TANet 環境中導入 eduroam 前需要留意的事情
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">發表於</span>
+
+      <time title="創建時間：2024-10-02 10:00:00" itemprop="dateCreated datePublished" datetime="2024-10-02T10:00:00+08:00">2024-10-02</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分類於</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/freeradius/" itemprop="url" rel="index"><span itemprop="name">freeradius</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>先前有提到 eduroam 採用的是 <code>RADIUS</code> 及 <code>802.1X</code> 的技術，那麼這一篇來談談在 TANet 上面導入這項服務需要注意的一些事情。</p>
+<span id="more"></span>
+<h2 id="角色">角色</h2>
+<p>首先彙整一下相關的角色定義</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">角色</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">eduroam Identity Provider (IdP)</td>
+<td>使用者身份驗證的提供者。基本上就是提供你帳號密碼的學校或機構</td>
+</tr>
+<tr>
+<td style="text-align:center">eduroam Service Provider (SP)</td>
+<td>提供 eduroam 的機構。簡單說如果你在某個學校使用 eduroam 這個無線網路，那這間學校就屬於 SP</td>
+</tr>
+<tr>
+<td style="text-align:center">Roaming Operator (RO)</td>
+<td>由 GeGC 或是 RC 認可的營運中心。教育部的<code>TANet無線網路漫遊交換中心</code>就屬於 RO</td>
+</tr>
+<tr>
+<td style="text-align:center">Roaming Confederation (RC)</td>
+<td>由 GeGC 認可的區域聯盟</td>
+</tr>
+<tr>
+<td style="text-align:center">The Global eduroam Governance Committee (GeGc)</td>
+<td>制定規範、技術及授權的治理委員會</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>如果你打算要在校內要提供 eduroam 無線網路服務，那麼你就會有 <code>SP</code> 跟 <code>IdP</code> 這兩個角色</p>
+</blockquote>
+<h2 id="技術合規文件">技術合規文件</h2>
+<p>GeGC 制定了一份<span class="exturl" data-url="aHR0cHM6Ly9lZHVyb2FtLm9yZy93cC1jb250ZW50L3VwbG9hZHMvMjAyMy8xMC9lZHVyb2FtX0NvbXBsaWFuY2VfU3RhdGVtZW50X3YyLUZJTkFMLnBkZg==">合規標準<i class="fa fa-external-link-alt"></i></span>，用來規範 <code>RC</code> 及 <code>RO</code>，可以說是一階文件，而在 <span class="exturl" data-url="aHR0cHM6Ly9lZHVyb2FtLm9yZy93cC1jb250ZW50L3VwbG9hZHMvMjAyMC8wMi9HTjMtMTItMTkyX2VkdXJvYW0tcG9saWN5LXNlcnZpY2UtZGVmaW5pdGlvbl92ZXIyOF8yNjA3MjAxMi5wZGY=">eduroam Policy Service Definition<i class="fa fa-external-link-alt"></i></span> 這份文件中定義了更詳細的技術規格，包含了各個角色的 <code>REQUIRED</code>、<code>RECOMMENDED</code>，需要特別留意及遵守。</p>
+<p>建置 RADIUS Server 更是要詳讀章節 6.3.2 (IdP) 及 6.3.3 (SP)，裡面談到的就是屬於 802.1X 及 RADIUS 傳遞的必要條件及欄位</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>Sam Chen
+  </li>
+  <li class="post-copyright-link">
+      <strong>文章連結：</strong>
+      <a href="https://silent198214.github.io/freeradius/eduroam-compliance-intro/" title="在 TANet 環境中導入 eduroam 前需要留意的事情">https://silent198214.github.io/freeradius/eduroam-compliance-intro/</a>
+  </li>
+  <li class="post-copyright-license">
+      <strong>版權聲明： </strong>本網誌所有文章除特別聲明外，均採用 <span class="exturl" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC8="><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</span> 許可協議。轉載請註明出處！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/RADIUS/" rel="tag"># RADIUS</a>
+              <a href="/tags/eduroam/" rel="tag"># eduroam</a>
+              <a href="/tags/compliance/" rel="tag"># compliance</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/freeradius/roaming-intro/" rel="prev" title="TANet 跨校漫遊歷史演進">
+                  <i class="fa fa-angle-left"></i> TANet 跨校漫遊歷史演進
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/freeradius/cve-2024-3596-blastradius/" rel="next" title="FreeRADIUS 的 BlastRADIUS 弱點修補">
+                  FreeRADIUS 的 BlastRADIUS 弱點修補 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2015 – 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Sam Chen</span>
+  </div>
+  <div class="powered-by">由 <span class="exturl" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl" data-url="aHR0cHM6Ly90aGVtZS1uZXh0LmpzLm9yZw==">NexT.Gemini</span> 強力驅動
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="回到頂端">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.31/fancybox/fancybox.umd.js" integrity="sha256-a+H7FYzJv6oU2hfsfDGM2Ohw/cR9v+hPfxHCLdmCrE8=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+  <script src="/js/third-party/fancybox.js"></script>
+
+
+
+  
+
+
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/quicklink/2.3.0/quicklink.umd.js" integrity="sha256-yvJQOINiH9fWemHn0vCA5lsHWJaHs6/ZmO+1Ft04SvM=" crossorigin="anonymous"></script>
+  <script class="next-config" data-name="quicklink" type="application/json">{"enable":true,"home":true,"archive":true,"delay":true,"timeout":3000,"priority":true,"url":"https://silent198214.github.io/freeradius/eduroam-compliance-intro/"}</script>
+  <script src="/js/third-party/quicklink.js"></script>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"silent198214/silent198214.github.io","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js"></script>
+
+</body>
+</html>

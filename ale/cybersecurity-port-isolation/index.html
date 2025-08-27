@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="po7J7mJmPnFy18jHjTQq1NrsexKsVfZYl0zy84hP08s">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha256-5eIC48iZUHmSlSUz9XtjRyK2mzQkHScZY1WdMaoz74E=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.31/fancybox/fancybox.css" integrity="sha256-gkQVf8UKZgQ0HyuxL/VnacadJ+D2Kox2TCEBuNQg5+w=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"silent198214.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.21.1","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":false,"copycode":{"enable":true,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":false,"lazyload":true,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":false,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜尋...","empty":"我們無法找到任何有關 ${query} 的搜索結果","hits_time":"找到 ${hits} 個搜索結果（用時 ${time} 毫秒）","hits":"找到 ${hits} 個搜索結果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="以前我們講求的縱深防禦，是由上而下築起防禦工事，顯然對於現今的資訊安全已經不足，因為在相同 Layer 2 Domain 下的裝置是不需要經過 routing 就可以互相連通，更何況現在 DataCenter 都是講求大二層的架構，如果有一些攻擊行為採取橫向探測移動，除非要在本機上啟動防火牆功能，否則是難以使用ACL、外部 Firewall 來進行管控。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Port Isolation of OmniSwitch">
+<meta property="og:url" content="https://silent198214.github.io/ale/cybersecurity-port-isolation/">
+<meta property="og:site_name" content="山姆的 IT 日常">
+<meta property="og:description" content="以前我們講求的縱深防禦，是由上而下築起防禦工事，顯然對於現今的資訊安全已經不足，因為在相同 Layer 2 Domain 下的裝置是不需要經過 routing 就可以互相連通，更何況現在 DataCenter 都是講求大二層的架構，如果有一些攻擊行為採取橫向探測移動，除非要在本機上啟動防火牆功能，否則是難以使用ACL、外部 Firewall 來進行管控。">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2021-05-14T16:09:07.000Z">
+<meta property="article:modified_time" content="2021-05-14T16:09:07.000Z">
+<meta property="article:author" content="Sam Chen">
+<meta property="article:tag" content="CyberSecurity">
+<meta property="article:tag" content="OmniSwitch">
+<meta property="article:tag" content="ALE">
+<meta property="article:tag" content="Micro Segmentation">
+<meta property="article:tag" content="Isolation">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://silent198214.github.io/ale/cybersecurity-port-isolation/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-TW","comments":true,"permalink":"https://silent198214.github.io/ale/cybersecurity-port-isolation/","path":"ale/cybersecurity-port-isolation/","title":"Port Isolation of OmniSwitch"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Port Isolation of OmniSwitch | 山姆的 IT 日常</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-8K41M2BW4P"></script>
+  <script class="next-config" data-name="google_analytics" type="application/json">{"tracking_id":"G-8K41M2BW4P","only_pageview":false,"measure_protocol_api_secret":null}</script>
+  <script src="/js/third-party/analytics/google-analytics.js"></script>
+
+
+
+  <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{&quot;token&quot;: &quot;376b1ae59fa7423797c15d59469ee4e4&quot;}'></script>
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切換導航欄" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">山姆的 IT 日常</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">Networking / Devops</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜尋" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首頁</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>標籤</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分類</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>歸檔</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目錄
+        </li>
+        <li class="sidebar-nav-overview">
+          本站概要
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%A6%E4%BD%9C"><span class="nav-number">1.</span> <span class="nav-text">實作</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Basic-setup"><span class="nav-number">1.1.</span> <span class="nav-text">Basic setup</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Sessions-share"><span class="nav-number">1.2.</span> <span class="nav-text">Sessions share</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Sam Chen"
+      src="https://github.com/silent198214.png">
+  <p class="site-author-name" itemprop="name">Sam Chen</p>
+  <div class="site-description" itemprop="description">努力的走在 IT 這條漫長的道路上</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">35</span>
+          <span class="site-state-item-name">文章</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分類</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">標籤</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL3NpbGVudDE5ODIxNA==" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;silent198214"><i class="fab fa-github fa-lg fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cubGlua2VkaW4uY29tL2luL3NhbTE5ODIv" title="Linkedin → https:&#x2F;&#x2F;www.linkedin.com&#x2F;in&#x2F;sam1982&#x2F;"><i class="fab fa-linkedin-in fa-fw"></i>Linkedin</span>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-TW">
+    <link itemprop="mainEntityOfPage" href="https://silent198214.github.io/ale/cybersecurity-port-isolation/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://github.com/silent198214.png">
+      <meta itemprop="name" content="Sam Chen">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="山姆的 IT 日常">
+      <meta itemprop="description" content="努力的走在 IT 這條漫長的道路上">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Port Isolation of OmniSwitch | 山姆的 IT 日常">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Port Isolation of OmniSwitch
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">發表於</span>
+
+      <time title="創建時間：2021-05-15 00:09:07" itemprop="dateCreated datePublished" datetime="2021-05-15T00:09:07+08:00">2021-05-15</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分類於</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/ale/" itemprop="url" rel="index"><span itemprop="name">ale</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>以前我們講求的<code>縱深防禦</code>，是由上而下築起防禦工事，顯然對於現今的資訊安全已經不足，因為在相同 Layer 2 Domain 下的裝置是不需要經過 routing 就可以互相連通，更何況現在 DataCenter 都是講求<code>大二層</code>的架構，如果有一些攻擊行為採取橫向探測移動，除非要在本機上啟動防火牆功能，否則是難以使用ACL、外部 Firewall 來進行管控。</p>
+<span id="more"></span>
+<p>若要針對橫向溝通進行管控，這樣的方式早期稱為<code>Isolation</code>，而現在比較熱門的名詞則叫做<code>Micro Segmentation</code>。</p>
+<p>OmniSwitch有一個功能叫做<code>Port Mapping</code>，也可以稱作<code>Port Isolation</code>，可以想像就是將兩個<strong>physical port</strong>的流量進行<code>隔離</code>，無法互相溝通。</p>
+<div class="note warning"><p>在網路上你可能會查到有一些資料上面寫OmniSwitch Port Mapping(<code>Private VLAN</code>)這個字眼，這樣的寫法不太正確！</p>
+<p>因為Port Mapping的作用是隔離Port與Port之間的流量，而Private VLAN在<strong>AOS R8</strong>是一個獨立的功能，它才有辦法在同一個VLAN下隔離不同IP的連線。</p>
+</div>
+<h2 id="實作">實作</h2>
+<p>port mapping的session id總共有<strong>8</strong>個可以設定，預設的模式為雙向(<code>bidirectional</code>)</p>
+<h3 id="Basic-setup">Basic setup</h3>
+<p>這裡我們設定<strong>1/7</strong>與<strong>1/8</strong>這兩個port為<code>user port</code>，<strong>1/10</strong>為<code>network port</code>。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">-&gt; port mapping 8 user-port 1/7-8 network-port 1/10</span><br><span class="line">-&gt; port mapping 8 <span class="built_in">enable</span></span><br></pre></td></tr></table></figure>
+<p>執行完上面指令後可以下<em>show port mapping 8</em>來觀察一下列表</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">-&gt; show port mapping 8</span><br><span class="line"></span><br><span class="line">SessionID       USR-PORT        NETWORK-PORT</span><br><span class="line">-----------+----------------+------------------</span><br><span class="line">     8          1/7             1/10</span><br><span class="line">     8          1/8</span><br></pre></td></tr></table></figure>
+<p>也可以下<em>show port mapping 8 status</em>看一下模式設定</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">-&gt; show port mapping 8 status</span><br><span class="line"></span><br><span class="line">SessionID       Direction       Status	       DPA Status</span><br><span class="line">------------+-----------------+------------+-------------</span><br><span class="line">     8            bi           <span class="built_in">enable</span>          <span class="built_in">disable</span></span><br></pre></td></tr></table></figure>
+<p>上述設定的兩個user port是無法互相連通，只能與指定的network port連通。</p>
+<h3 id="Sessions-share">Sessions share</h3>
+<p>當port mapping的mode設定成單向(<code>unidirectional</code>)時，network port可以share不同的sessions，意思就是可以將不同session的network port設定成同一個，共用同一個port當成network port使用。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">-&gt; port mapping 8 unidirectional</span><br><span class="line">-&gt; port mapping 8 user-port 1/7 network-port 1/10</span><br><span class="line">-&gt; port mapping 8 <span class="built_in">enable</span></span><br><span class="line"></span><br><span class="line">-&gt; port mapping 7 unidirectional</span><br><span class="line">-&gt; port mapping 7 user-port 1/8 network-port 1/10</span><br><span class="line">-&gt; port mapping 7 <span class="built_in">enable</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">-&gt; show port mapping</span><br><span class="line"></span><br><span class="line">SessionID       USR-PORT        NETWORK-PORT</span><br><span class="line">-----------+----------------+------------------</span><br><span class="line">     7          1/8             1/10</span><br><span class="line">     8          1/7             1/10</span><br></pre></td></tr></table></figure>
+<div class="note info"><p>port mapping <code>bidirectional</code> mode是無法跟<strong>其他session</strong>或是<strong>任何mode</strong>共用相同network port</p>
+</div>
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>Sam Chen
+  </li>
+  <li class="post-copyright-link">
+      <strong>文章連結：</strong>
+      <a href="https://silent198214.github.io/ale/cybersecurity-port-isolation/" title="Port Isolation of OmniSwitch">https://silent198214.github.io/ale/cybersecurity-port-isolation/</a>
+  </li>
+  <li class="post-copyright-license">
+      <strong>版權聲明： </strong>本網誌所有文章除特別聲明外，均採用 <span class="exturl" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC8="><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</span> 許可協議。轉載請註明出處！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/CyberSecurity/" rel="tag"># CyberSecurity</a>
+              <a href="/tags/OmniSwitch/" rel="tag"># OmniSwitch</a>
+              <a href="/tags/ALE/" rel="tag"># ALE</a>
+              <a href="/tags/Micro-Segmentation/" rel="tag"># Micro Segmentation</a>
+              <a href="/tags/Isolation/" rel="tag"># Isolation</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/ale/cybersecurity-anti-arp-spoofing/" rel="prev" title="Anti ARP Spoofing of OmniSwitch">
+                  <i class="fa fa-angle-left"></i> Anti ARP Spoofing of OmniSwitch
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/ale/cybersecurity-dhcp-snooping/" rel="next" title="DHCP Snooping of OmniSwitch">
+                  DHCP Snooping of OmniSwitch <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2015 – 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Sam Chen</span>
+  </div>
+  <div class="powered-by">由 <span class="exturl" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl" data-url="aHR0cHM6Ly90aGVtZS1uZXh0LmpzLm9yZw==">NexT.Gemini</span> 強力驅動
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="回到頂端">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.31/fancybox/fancybox.umd.js" integrity="sha256-a+H7FYzJv6oU2hfsfDGM2Ohw/cR9v+hPfxHCLdmCrE8=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+  <script src="/js/third-party/fancybox.js"></script>
+
+
+
+  
+
+
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/quicklink/2.3.0/quicklink.umd.js" integrity="sha256-yvJQOINiH9fWemHn0vCA5lsHWJaHs6/ZmO+1Ft04SvM=" crossorigin="anonymous"></script>
+  <script class="next-config" data-name="quicklink" type="application/json">{"enable":true,"home":true,"archive":true,"delay":true,"timeout":3000,"priority":true,"url":"https://silent198214.github.io/ale/cybersecurity-port-isolation/"}</script>
+  <script src="/js/third-party/quicklink.js"></script>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"silent198214/silent198214.github.io","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js"></script>
+
+</body>
+</html>
