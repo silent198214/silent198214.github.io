@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="-eZ7fzzUKcq4Skuil_S-NO7icdY0cV002Kxcr28n6yk">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha256-5eIC48iZUHmSlSUz9XtjRyK2mzQkHScZY1WdMaoz74E=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.31/fancybox/fancybox.css" integrity="sha256-gkQVf8UKZgQ0HyuxL/VnacadJ+D2Kox2TCEBuNQg5+w=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"blog.samhost.idv.tw","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.21.1","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":false,"copycode":{"enable":true,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":false,"lazyload":true,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":false,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜尋...","empty":"我們無法找到任何有關 ${query} 的搜索結果","hits_time":"找到 ${hits} 個搜索結果（用時 ${time} 毫秒）","hits":"找到 ${hits} 個搜索結果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="當使用 Android 手機連線到一個 802.1X 的網路，在 EAP 方法 (Method) 選擇使用 PEAP 或是 EAP-TTLS 時，在下方的欄位會看到一個叫做 匿名使用者 (anonymous identity)。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="關於 802.1X 的匿名使用者 anonymous identity">
+<meta property="og:url" content="https://blog.samhost.idv.tw/freeradius/tls-tunnel-anonymous/">
+<meta property="og:site_name" content="山姆的IT日常">
+<meta property="og:description" content="當使用 Android 手機連線到一個 802.1X 的網路，在 EAP 方法 (Method) 選擇使用 PEAP 或是 EAP-TTLS 時，在下方的欄位會看到一個叫做 匿名使用者 (anonymous identity)。">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/freeradius/wifi-eap-anonymous.jpg">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/freeradius/certificate-tofu.jpg">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/freeradius/certificate-prompt.jpg">
+<meta property="article:published_time" content="2024-11-03T02:00:00.000Z">
+<meta property="article:modified_time" content="2025-03-24T02:00:00.000Z">
+<meta property="article:author" content="Sam Chen">
+<meta property="article:tag" content="802.1X">
+<meta property="article:tag" content="RADIUS">
+<meta property="article:tag" content="anonymous identity">
+<meta property="article:tag" content="TLS tunnel">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.samhost.idv.tw/images/freeradius/wifi-eap-anonymous.jpg">
+
+
+<link rel="canonical" href="https://blog.samhost.idv.tw/freeradius/tls-tunnel-anonymous/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-TW","comments":true,"permalink":"https://blog.samhost.idv.tw/freeradius/tls-tunnel-anonymous/","path":"freeradius/tls-tunnel-anonymous/","title":"關於 802.1X 的匿名使用者 anonymous identity"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>關於 802.1X 的匿名使用者 anonymous identity | 山姆的IT日常</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-8K41M2BW4P"></script>
+  <script class="next-config" data-name="google_analytics" type="application/json">{"tracking_id":"G-8K41M2BW4P","only_pageview":false,"measure_protocol_api_secret":null}</script>
+  <script src="/js/third-party/analytics/google-analytics.js"></script>
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切換導航欄" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">山姆的IT日常</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">Networking / Devops</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜尋" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首頁</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>標籤</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分類</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>歸檔</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目錄
+        </li>
+        <li class="sidebar-nav-overview">
+          本站概要
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%88%87%E5%80%8B%E4%BA%BA%E9%9A%B1%E7%A7%81%E7%9B%B8%E9%97%9C"><span class="nav-number">1.</span> <span class="nav-text">與個人隱私相關</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#User-Name-%E8%AE%8A%E6%88%90-anonymous%EF%BC%8C%E5%A6%82%E4%BD%95%E9%80%B2%E8%A1%8C-RADIUS-Proxy%EF%BC%9F"><span class="nav-number">2.</span> <span class="nav-text">User-Name 變成 anonymous，如何進行 RADIUS Proxy？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A6%81%E5%A6%82%E4%BD%95%E7%9F%A5%E9%81%93%E6%98%AF%E5%90%A6%E8%A2%AB-TLS-Terminate-%EF%BC%9F"><span class="nav-number">3.</span> <span class="nav-text">要如何知道是否被 TLS Terminate ？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E6%AD%A3%E7%A2%BA%E7%9A%84%E8%A8%AD%E5%AE%9A-anonymus-identity"><span class="nav-number">4.</span> <span class="nav-text">如何正確的設定 anonymus identity</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B5%90%E8%AB%96"><span class="nav-number">5.</span> <span class="nav-text">結論</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#References"><span class="nav-number">6.</span> <span class="nav-text">References</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Sam Chen"
+      src="https://github.com/silent198214.png">
+  <p class="site-author-name" itemprop="name">Sam Chen</p>
+  <div class="site-description" itemprop="description">努力的走在 IT 這條漫長的道路上</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">35</span>
+          <span class="site-state-item-name">文章</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分類</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">標籤</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL3NpbGVudDE5ODIxNA==" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;silent198214"><i class="fab fa-github fa-lg fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cubGlua2VkaW4uY29tL2luL3NhbTE5ODIv" title="Linkedin → https:&#x2F;&#x2F;www.linkedin.com&#x2F;in&#x2F;sam1982&#x2F;"><i class="fab fa-linkedin-in fa-fw"></i>Linkedin</span>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-TW">
+    <link itemprop="mainEntityOfPage" href="https://blog.samhost.idv.tw/freeradius/tls-tunnel-anonymous/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://github.com/silent198214.png">
+      <meta itemprop="name" content="Sam Chen">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="山姆的IT日常">
+      <meta itemprop="description" content="努力的走在 IT 這條漫長的道路上">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="關於 802.1X 的匿名使用者 anonymous identity | 山姆的IT日常">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          關於 802.1X 的匿名使用者 anonymous identity
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">發表於</span>
+
+      <time title="創建時間：2024-11-03 10:00:00" itemprop="dateCreated datePublished" datetime="2024-11-03T10:00:00+08:00">2024-11-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新於</span>
+      <time title="修改時間：2025-03-24 10:00:00" itemprop="dateModified" datetime="2025-03-24T10:00:00+08:00">2025-03-24</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分類於</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/freeradius/" itemprop="url" rel="index"><span itemprop="name">freeradius</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>當使用 Android 手機連線到一個 802.1X 的網路，在 EAP 方法 (Method) 選擇使用 PEAP 或是 EAP-TTLS 時，在下方的欄位會看到一個叫做 <code>匿名使用者 (anonymous identity)</code>。</p>
+<span id="more"></span>
+<p><img data-src="/images/freeradius/wifi-eap-anonymous.jpg" alt="anonymous identity"></p>
+<p>而在學術網路 (TANet) 上的很多教學文件裡面，會請使用者直接留空不填，但到底這個欄位是為了什麼而設計？</p>
+<p>針對這個問題，在這次協助建置 eduroam 的同時研究出一些心得，提供一些個人的解讀及看法給大家。</p>
+<h2 id="與個人隱私相關">與個人隱私相關</h2>
+<p>EAP Methods 在整個驗證的過程中會傳送所謂的 <strong>Identity</strong>，也就是使用者的帳號資訊，在 RADIUS 的 Attribute Name 為 <code>User-Name</code>，這個 <strong>Identity</strong> 從驗證到結束都是以 明文 (Cleartext) 的方式傳遞。</p>
+<p>在某些支援 TLS Tunnel 的 EAP Method (PEAP, EAP-TTLS…) 則會再進階的區分 outer identity / inner identity，outer identity 用於建立 TLS Tunnel，而 inner identity 則用於在 TLS Tunnel 建立完成後的身份驗證流程。</p>
+<div class="note info"><p>outer identity 與 inner identity 可以完全不相同，更甚至是沒有任何關係，一般預設的值會是 <code>anonymous</code> ，所以也叫做匿名使用者 (<strong>anonymous identity</strong>)。</p>
+</div>
+<p>這就關係到使用者的隱私問題，利用 TLS Tunnel 機制來區分 outer / inner identity 可以進階的保護使用者的資訊不被中間的 RADIUS Service Providers 紀錄下來，又可以將正確的資訊隱藏在加密的 Tunnel 裡面傳輸到 Identity Provider，所以 eduroam 官方建議使用此類型的 EAP Methods，並正確的設定 anonymous identity 來保護使用者的隱私。</p>
+<p>但另一個問題來了，outer identity (User-Name) 變成 anonymous 時，要怎麼<code>正確</code>的將資訊傳送到對的 RADIUS Server ？</p>
+<h2 id="User-Name-變成-anonymous，如何進行-RADIUS-Proxy？">User-Name 變成 anonymous，如何進行 RADIUS Proxy？</h2>
+<p>這個問題其實沒有標準答案，主要是看整個架構是否有定義統一的規範。</p>
+<p>我們知道，決定哪些使用者要留下來進行 Local Authentication 、哪些要轉送到外部 RADIUS Server (TANet 叫做漫遊中心)，靠的是 User-Name 的 <strong>完整網域帳號</strong> ，並透過 IPASS (/) 或是 suffix (@) 所設定的 <code>delimiter</code> 來切割 Stripped-User-Name 及 Realm 。</p>
+<div class="note info"><p>例如：</p>
+<p>User-Name: <strong><span class="exturl" data-url="bWFpbHRvOnVzZXJAeHh4LmVkdS50dw==">user@xxx.edu.tw<i class="fa fa-external-link-alt"></i></span></strong><br>
+Stripped-User-Name: <strong>user</strong><br>
+Realm: <strong><span class="exturl" data-url="aHR0cDovL3h4eC5lZHUudHc=">xxx.edu.tw<i class="fa fa-external-link-alt"></i></span></strong></p>
+</div>
+<p>所以當 User-Name 是 anonymous 時，則 Realm 會是 NULL。</p>
+<p>而 FreeRADIUS 預設的 proxy.conf 是沒有開啟 realm NULL 導向，基本上這個 Access-Request 會被 reject。</p>
+<div class="note info"><p>如果你的環境雖然沒有開啟 <code>realm NULL</code>，但是有開啟 <code>realm DEFAULT</code> ，這個時候 Access-Request 是會轉送到 Default 哦。</p>
+</div>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ vi /etc/raddb/proxy.conf</span><br></pre></td></tr></table></figure>
+<figure class="highlight toml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment">#  This realm is for requests which don&#x27;t have an explicit realm</span></span><br><span class="line"><span class="comment">#  prefix or suffix.  User names like &quot;bob&quot; will match this one.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment">#realm NULL &#123;</span></span><br><span class="line"><span class="comment">#   authhost = radius.example.com:1600</span></span><br><span class="line"><span class="comment">#   accthost = radius.example.com:1601</span></span><br><span class="line"><span class="comment">#   secret = testing123</span></span><br><span class="line"><span class="comment">#&#125;</span></span><br></pre></td></tr></table></figure>
+<p>不過為了要能夠讓 anonymous 可以使用，通常會啟用並設定由 LOCAL 來處理</p>
+<figure class="highlight toml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#</span></span><br><span class="line">realm NULL &#123;</span><br><span class="line">    <span class="attr">authhost</span> = LOCAL</span><br><span class="line">    <span class="attr">accthost</span> = LOCAL</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>這時就會發生所謂 TLS Terminate 的狀況，也就是 TLS Tunnel 其實是跟這台 RADIUS Server 建立，而不是 Identity Provider，如果這台 RADIUS Server 是你漫遊的中間商，那表示你的資訊就會被它看到，包含你所傳輸的機敏資訊 (User-Password)</p>
+<div class="note info"><p>通常 RADIUS Server 會設定 detail 參數，把密碼欄位排除掉不紀錄。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ vi /etc/raddb/mods-enabled/detail</span><br></pre></td></tr></table></figure>
+<figure class="highlight toml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">detail &#123;</span><br><span class="line">    ...</span><br><span class="line">    suppress &#123;</span><br><span class="line">        User-Password</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+<h2 id="要如何知道是否被-TLS-Terminate-？">要如何知道是否被 TLS Terminate ？</h2>
+<p>最簡單的方式就是在連線的時候，CA 憑證欄位選擇 <strong>首次使用的信任原則 (TOFU)</strong></p>
+<p><img data-src="/images/freeradius/certificate-tofu.jpg" alt="Certificate TOFU"></p>
+<p>點選連線後，會彈跳出一個<strong>憑證視窗</strong>讓你確認這張憑證是否是提供你帳號的 Identity provider 端所簽發的</p>
+<p><img data-src="/images/freeradius/certificate-prompt.jpg" alt="Certificate prompt"></p>
+<h2 id="如何正確的設定-anonymus-identity">如何正確的設定 anonymus identity</h2>
+<blockquote>
+<p>Since the outer identity is only needed for routing purposes towards the IdP, the local username part does not have to be accurate and can be obfuscated. The IETF-suggested way of obfuscating the username is to leave it empty; but it can just as well be replaced with “anonymous”, “anon” or similar. However, the realm part (i.e. behind the @ sign) always needs to be accurate because it contains the routing information.</p>
+</blockquote>
+<p>eduroam 官方有說明，建議在這個欄位加上 <strong>@realm</strong> ，例如 <code>anonymous@xxx.edu.tw</code> ，讓 outer 的驗證過程可以順利的將 User-Name 拆解出 Realm，以便傳遞到正確的 RADIUS Server 進行 TLS Tunnel handshake</p>
+<h2 id="結論">結論</h2>
+<p>事實上 anonymous identity 這個欄位一直以來都不是強制必填，留空後送出也會帶你真實的使用者帳號來當作 outer identity 傳遞，如果你不介意資訊洩漏，基本上也不會在意，不過在資安意識抬頭的時代，多少還是要保護好個資會比較妥當。</p>
+<div class="note info"><p>我實際使用 Windows 選擇 PEAP 時發現沒有欄位可以設定 anonymous identity，而 Apple device 更是簡單到只讓你設定帳號密碼。</p>
+</div>
+<h2 id="References">References</h2>
+<ul>
+<li><span class="exturl" data-url="aHR0cHM6Ly93aWtpLmdlYW50Lm9yZy9kaXNwbGF5L0gyZWR1cm9hbS9lYXAtdHlwZXM=">https://wiki.geant.org/display/H2eduroam/eap-types<i class="fa fa-external-link-alt"></i></span></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>Sam Chen
+  </li>
+  <li class="post-copyright-link">
+      <strong>文章連結：</strong>
+      <a href="https://blog.samhost.idv.tw/freeradius/tls-tunnel-anonymous/" title="關於 802.1X 的匿名使用者 anonymous identity">https://blog.samhost.idv.tw/freeradius/tls-tunnel-anonymous/</a>
+  </li>
+  <li class="post-copyright-license">
+      <strong>版權聲明： </strong>本網誌所有文章除特別聲明外，均採用 <span class="exturl" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC8="><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</span> 許可協議。轉載請註明出處！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/802-1X/" rel="tag"># 802.1X</a>
+              <a href="/tags/RADIUS/" rel="tag"># RADIUS</a>
+              <a href="/tags/anonymous-identity/" rel="tag"># anonymous identity</a>
+              <a href="/tags/TLS-tunnel/" rel="tag"># TLS tunnel</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/fortinet/tip-radius-invalid-secret/" rel="prev" title="FortiGate radius gui response invalid secret for the server">
+                  <i class="fa fa-angle-left"></i> FortiGate radius gui response invalid secret for the server
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/freeradius/eap-peap-ttls/" rel="next" title="FreeRADIUS 設定 PEAP/EAP-GTC 與 EAP-TTLS/PAP 雙驗證機制">
+                  FreeRADIUS 設定 PEAP/EAP-GTC 與 EAP-TTLS/PAP 雙驗證機制 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2015 – 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Sam Chen</span>
+  </div>
+  <div class="powered-by">由 <span class="exturl" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl" data-url="aHR0cHM6Ly90aGVtZS1uZXh0LmpzLm9yZw==">NexT.Gemini</span> 強力驅動
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="回到頂端">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.31/fancybox/fancybox.umd.js" integrity="sha256-a+H7FYzJv6oU2hfsfDGM2Ohw/cR9v+hPfxHCLdmCrE8=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+  <script src="/js/third-party/fancybox.js"></script>
+
+
+
+  
+
+
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/quicklink/2.3.0/quicklink.umd.js" integrity="sha256-yvJQOINiH9fWemHn0vCA5lsHWJaHs6/ZmO+1Ft04SvM=" crossorigin="anonymous"></script>
+  <script class="next-config" data-name="quicklink" type="application/json">{"enable":true,"home":true,"archive":true,"delay":true,"timeout":3000,"priority":true,"url":"https://blog.samhost.idv.tw/freeradius/tls-tunnel-anonymous/"}</script>
+  <script src="/js/third-party/quicklink.js"></script>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"silent198214/silent198214.github.io","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="-eZ7fzzUKcq4Skuil_S-NO7icdY0cV002Kxcr28n6yk">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha256-5eIC48iZUHmSlSUz9XtjRyK2mzQkHScZY1WdMaoz74E=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.31/fancybox/fancybox.css" integrity="sha256-gkQVf8UKZgQ0HyuxL/VnacadJ+D2Kox2TCEBuNQg5+w=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"blog.samhost.idv.tw","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.21.1","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":false,"copycode":{"enable":true,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":false,"lazyload":true,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":false,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜尋...","empty":"我們無法找到任何有關 ${query} 的搜索結果","hits_time":"找到 ${hits} 個搜索結果（用時 ${time} 毫秒）","hits":"找到 ${hits} 個搜索結果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="近來協助處理某大型企業要將 Aruba 認證導向 AD，認證的部份要用到802.1X跟PEAP &#x2F; MS-CHAP-V2，過程之中遇到了許許多多的問題，還好大致上都解決了，趁著還有記憶的時候趕緊記錄下來，東西很多，請耐心觀看。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="FreeRADIUS 整合 Active Directory 認證(Multiple Domains 模式)">
+<meta property="og:url" content="https://blog.samhost.idv.tw/freeradius/integrate-active-directory/">
+<meta property="og:site_name" content="山姆的IT日常">
+<meta property="og:description" content="近來協助處理某大型企業要將 Aruba 認證導向 AD，認證的部份要用到802.1X跟PEAP &#x2F; MS-CHAP-V2，過程之中遇到了許許多多的問題，還好大致上都解決了，趁著還有記憶的時候趕緊記錄下來，東西很多，請耐心觀看。">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2015-02-13T03:48:21.000Z">
+<meta property="article:modified_time" content="2015-02-13T03:48:21.000Z">
+<meta property="article:author" content="Sam Chen">
+<meta property="article:tag" content="802.1X">
+<meta property="article:tag" content="FreeRADIUS">
+<meta property="article:tag" content="Active Directory">
+<meta property="article:tag" content="Aruba">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://blog.samhost.idv.tw/freeradius/integrate-active-directory/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-TW","comments":true,"permalink":"https://blog.samhost.idv.tw/freeradius/integrate-active-directory/","path":"freeradius/integrate-active-directory/","title":"FreeRADIUS 整合 Active Directory 認證(Multiple Domains 模式)"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>FreeRADIUS 整合 Active Directory 認證(Multiple Domains 模式) | 山姆的IT日常</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-8K41M2BW4P"></script>
+  <script class="next-config" data-name="google_analytics" type="application/json">{"tracking_id":"G-8K41M2BW4P","only_pageview":false,"measure_protocol_api_secret":null}</script>
+  <script src="/js/third-party/analytics/google-analytics.js"></script>
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切換導航欄" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">山姆的IT日常</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">Networking / Devops</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜尋" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首頁</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>標籤</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分類</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>歸檔</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目錄
+        </li>
+        <li class="sidebar-nav-overview">
+          本站概要
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E7%92%B0%E5%A2%83"><span class="nav-number">1.</span> <span class="nav-text">基本環境</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A8%AD%E5%AE%9ALinux%E7%92%B0%E5%A2%83"><span class="nav-number">2.</span> <span class="nav-text">設定Linux環境</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Packages-Install"><span class="nav-number">3.</span> <span class="nav-text">Packages Install</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Samba%E8%A8%AD%E5%AE%9A"><span class="nav-number">4.</span> <span class="nav-text">Samba設定</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#krb5%E8%A8%AD%E5%AE%9A"><span class="nav-number">5.</span> <span class="nav-text">krb5設定</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#kdc%E8%A8%AD%E5%AE%9A"><span class="nav-number">6.</span> <span class="nav-text">kdc設定</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B6%B2%E5%9F%9F%E4%BF%A1%E4%BB%BB"><span class="nav-number">7.</span> <span class="nav-text">網域信任</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%96%E5%BE%97%E9%A9%97%E8%AD%89ticket"><span class="nav-number">8.</span> <span class="nav-text">取得驗證ticket</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8A%A0%E5%85%A5AD-Domain"><span class="nav-number">9.</span> <span class="nav-text">加入AD Domain</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B8%AC%E8%A9%A6%E9%A9%97%E8%AD%89"><span class="nav-number">10.</span> <span class="nav-text">測試驗證</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9B%B4%E6%94%B9-var-lib-samba-winbindd-privileged%E7%9B%AE%E9%8C%84%E6%AC%8A%E9%99%90"><span class="nav-number">11.</span> <span class="nav-text">更改&#x2F;var&#x2F;lib&#x2F;samba&#x2F;winbindd_privileged目錄權限</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Freeradius%E8%A8%AD%E5%AE%9A"><span class="nav-number">12.</span> <span class="nav-text">Freeradius設定</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#module-mschap%E8%A8%AD%E5%AE%9A"><span class="nav-number">12.1.</span> <span class="nav-text">module&#x2F;mschap設定</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#proxy-conf%E8%A8%AD%E5%AE%9A"><span class="nav-number">12.2.</span> <span class="nav-text">proxy.conf設定</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#client-conf%E8%A8%AD%E5%AE%9A"><span class="nav-number">12.3.</span> <span class="nav-text">client.conf設定</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sites-available-default%E8%A8%AD%E5%AE%9A"><span class="nav-number">12.4.</span> <span class="nav-text">sites-available&#x2F;default設定</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#EAP-%E8%A8%AD%E5%AE%9A"><span class="nav-number">12.5.</span> <span class="nav-text">EAP 設定</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B5%90%E8%AB%96"><span class="nav-number">13.</span> <span class="nav-text">結論</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Sam Chen"
+      src="https://github.com/silent198214.png">
+  <p class="site-author-name" itemprop="name">Sam Chen</p>
+  <div class="site-description" itemprop="description">努力的走在 IT 這條漫長的道路上</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">35</span>
+          <span class="site-state-item-name">文章</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分類</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">標籤</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL3NpbGVudDE5ODIxNA==" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;silent198214"><i class="fab fa-github fa-lg fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cubGlua2VkaW4uY29tL2luL3NhbTE5ODIv" title="Linkedin → https:&#x2F;&#x2F;www.linkedin.com&#x2F;in&#x2F;sam1982&#x2F;"><i class="fab fa-linkedin-in fa-fw"></i>Linkedin</span>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-TW">
+    <link itemprop="mainEntityOfPage" href="https://blog.samhost.idv.tw/freeradius/integrate-active-directory/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://github.com/silent198214.png">
+      <meta itemprop="name" content="Sam Chen">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="山姆的IT日常">
+      <meta itemprop="description" content="努力的走在 IT 這條漫長的道路上">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="FreeRADIUS 整合 Active Directory 認證(Multiple Domains 模式) | 山姆的IT日常">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          FreeRADIUS 整合 Active Directory 認證(Multiple Domains 模式)
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">發表於</span>
+
+      <time title="創建時間：2015-02-13 11:48:21" itemprop="dateCreated datePublished" datetime="2015-02-13T11:48:21+08:00">2015-02-13</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分類於</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/freeradius/" itemprop="url" rel="index"><span itemprop="name">freeradius</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>近來協助處理某大型企業要將 Aruba 認證導向 AD，認證的部份要用到<code>802.1X</code>跟<code>PEAP / MS-CHAP-V2</code>，過程之中遇到了許許多多的問題，還好大致上都解決了，趁著還有記憶的時候趕緊記錄下來，東西很多，請耐心觀看。</p>
+<span id="more"></span>
+<blockquote>
+<p>由於環境內需要join AD才可以查詢，所以就必須使用Samba來join AD</p>
+</blockquote>
+<blockquote>
+<p>Change Log</p>
+<ul>
+<li>20210723 增加winbind <code>NT_STATUS_ACCESS_DENIED</code> 錯誤訊息的說明與處理，以及EAP的觀念說明。</li>
+</ul>
+</blockquote>
+<h2 id="基本環境">基本環境</h2>
+<ul>
+<li>CentOS 6.x</li>
+<li>Freeradius 2.1.12</li>
+<li>Samba 3.5.10</li>
+<li>krb5-server 1.9</li>
+<li>Domain name : <span class="exturl" data-url="aHR0cDovL2FkdGVzdC5jb20=">adtest.com<i class="fa fa-external-link-alt"></i></span></li>
+<li>AD server (2008 R2): <span class="exturl" data-url="aHR0cDovL2RjLmFkdGVzdC5jb20=">dc.adtest.com<i class="fa fa-external-link-alt"></i></span></li>
+</ul>
+<h2 id="設定Linux環境">設定Linux環境</h2>
+<ul>
+<li>關閉 selinux與iptables(以防一些意外發生, 完成後再調整)</li>
+<li>AD的ip跟domain設定在/etc/hosts裡</li>
+<li>dns server設定為AD的ip</li>
+<li>關閉ipv6(避免samba log出現smbd_open_once_socket: open_socket_in: Address already in use)</li>
+</ul>
+<h2 id="Packages-Install">Packages Install</h2>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@radius ~]# yum install freeradius freeradius-utils samba samba-winbind krb5-server krb5-workstation</span><br></pre></td></tr></table></figure>
+<h2 id="Samba設定">Samba設定</h2>
+<p>由於我們只是要藉由samba來查詢AD的資料，不需提供AD的user來登入freeradius，所以在smb.conf的global部份只需設定以下的內容即可。</p>
+<p>另外在這裡我們是用<code>ADS(Domain membership)</code>的方式來與AD做溝通，他會把Linux模擬成<code>windows 2000</code>來與AD做join，在這個模式中會使用<code>kerberos</code>的方式來做驗證</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[root@radius ~]# cd /etc/samba/</span><br><span class="line">[root@radius /etc/samba]# mv smb.conf smb.conf.bak</span><br><span class="line"></span><br><span class="line">[root@radius ~]# /etc/samba# vim smb.conf</span><br></pre></td></tr></table></figure>
+<figure class="highlight apacheconf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">[<span class="attribute">global</span>]</span><br><span class="line">    <span class="attribute">workgroup</span> = adtest</span><br><span class="line">    <span class="comment"># 你的domain(一定要大寫)</span></span><br><span class="line">    <span class="attribute">realm</span> = ADTEST.COM</span><br><span class="line">    <span class="comment"># 你的hostname</span></span><br><span class="line">    <span class="attribute">netbios</span> name = radius</span><br><span class="line">    <span class="attribute">security</span> = ads</span><br><span class="line">    <span class="comment"># dc的domain</span></span><br><span class="line">    <span class="attribute">password</span> server = dc.adtest.com</span><br><span class="line">    <span class="comment"># 非常重要!!! 一定要做encrypt passwords 不然怎麼設定都連不上AD</span></span><br><span class="line">    <span class="comment"># 而且winbind會造成cpu overload</span></span><br><span class="line">    <span class="attribute">encrypt</span> passwords = yes</span><br><span class="line">    <span class="comment"># 關掉cups</span></span><br><span class="line">    <span class="attribute">load</span> printers = no</span><br><span class="line">    <span class="attribute">printcap</span> name = /dev/null</span><br><span class="line">    <span class="attribute">disable</span> spoolss = yes</span><br></pre></td></tr></table></figure>
+<h2 id="krb5設定">krb5設定</h2>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@radius ~]# vim /etc/krb5.conf</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">[logging]</span><br><span class="line">    default = FILE:/var/log/krb5libs.<span class="built_in">log</span></span><br><span class="line">    kdc = FILE:/var/log/krb5kdc.<span class="built_in">log</span></span><br><span class="line">    admin_server = FILE:/var/log/kadmind.log</span><br><span class="line"> </span><br><span class="line">[libdefaults]</span><br><span class="line">    default_realm = ADTEST.COM</span><br><span class="line">    dns_lookup_realm = <span class="literal">false</span></span><br><span class="line">    dns_lookup_kdc = <span class="literal">false</span></span><br><span class="line">    ticket_lifetime = 24h</span><br><span class="line">    renew_lifetime = 7d</span><br><span class="line">    forwardable = <span class="literal">true</span></span><br><span class="line"> </span><br><span class="line">[realms]</span><br><span class="line">    <span class="comment"># domain要大寫</span></span><br><span class="line">    ADTEST.COM = &#123;</span><br><span class="line">        kdc = dc.adtest.com:88</span><br><span class="line">        admin_server = dc.adtest.com:749</span><br><span class="line">        default_domain = adtest.com</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">[domain_realm]</span><br><span class="line">    <span class="comment"># domain要大寫</span></span><br><span class="line">    .adtest.com = ADTEST.COM</span><br><span class="line">    adtest.com = ADTEST.COM</span><br><span class="line"> </span><br><span class="line">[kdc]</span><br><span class="line">    profile = /var/kerberos/krb5kdc/kdc.conf</span><br></pre></td></tr></table></figure>
+<h2 id="kdc設定">kdc設定</h2>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@radius ~]# vim /var/kerberos/krb5kdc/kdc.conf</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">[kdcdefaults]</span><br><span class="line">    kdc_ports = 88</span><br><span class="line">    kdc_tcp_ports = 88</span><br><span class="line"> </span><br><span class="line">[realms]</span><br><span class="line">    <span class="comment"># domain要大寫</span></span><br><span class="line">    ADTEST.COM = &#123;</span><br><span class="line">        <span class="comment">#master_key_type = aes256-cts</span></span><br><span class="line">        acl_file = /var/kerberos/krb5kdc/kadm5.acl</span><br><span class="line">        dict_file = /usr/share/dict/words</span><br><span class="line">        admin_keytab = /var/kerberos/krb5kdc/kadm5.keytab</span><br><span class="line">        supported_enctypes = aes256-cts:normal aes128-cts:normal des3-hmac-sha1:normal arcfour-hmac:normal des-hmac-sha1:normal des-cbc-md5:normal des-cbc-crc:normal</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<h2 id="網域信任">網域信任</h2>
+<p>如何做網域信任，這裡就不贅述了，請參考google大神的說明…</p>
+<h2 id="取得驗證ticket">取得驗證ticket</h2>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@radius ~]# kinit administrator@ADTEST.COM</span><br></pre></td></tr></table></figure>
+<p>輸入完上述的指令後會要求輸入密碼，這裡需要用到網域信任的帳號密碼。</p>
+<p>若輸入完後無出現任何訊息，就表示已完成取得ticket。</p>
+<p>可以使用klist確認ticket狀況</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[root@radius ~]# klist</span><br><span class="line">Ticket cache: FILE:/tmp/krb5cc_0</span><br><span class="line">Default principal: administrator@ADTEST.COM</span><br><span class="line"> </span><br><span class="line">Valid starting     Expires            Service principal</span><br><span class="line">10/03/12 16:31:02  10/04/12 02:31:11  krbtgt/ADTEST.COM@ADTEST.COM</span><br><span class="line">    renew until 10/10/12 16:31:02</span><br></pre></td></tr></table></figure>
+<h2 id="加入AD-Domain">加入AD Domain</h2>
+<p>當Samba與kerberos都設定好後，需要啟動一下Samba與Winbind。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@radius ~]# service smb start</span><br><span class="line">[root@radius ~]# service winbind start</span><br></pre></td></tr></table></figure>
+<p>再來將Linux加入Domain</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@radius ~]# net ads join -U administrator</span><br></pre></td></tr></table></figure>
+<p>輸入完密碼之後，正確的話會沒有任何輸出資訊。</p>
+<p>這時就可以在AD上面看到Linux加入網域囉。</p>
+<h2 id="測試驗證">測試驗證</h2>
+<p>Domain加入成功後，就可以使用下述的指令來測試是否可以驗證</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@radius ~]# ntlm_auth --request-nt-key --domain=ADTEST.COM --username=&lt;一般使用者&gt; --password=&lt;使用者的密碼&gt;</span><br></pre></td></tr></table></figure>
+<p>驗證成功會出現以下資訊</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">NT_STATUS_OK: Success (0x0)</span><br></pre></td></tr></table></figure>
+<div class="note info"><p>如果已經確認domain及帳號密碼都是正確的，但驗證卻出現以下資訊</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">NT_STATUS_ACCESS_DENIED: &#123;Access Denied&#125; A process has requested access to an object but has not been granted those access rights. (0xc0000022)</span><br></pre></td></tr></table></figure>
+<p>請在smb.conf裡多加一個參數</p>
+<figure class="highlight apacheconf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[<span class="attribute">global</span>]</span><br><span class="line">    ...</span><br><span class="line">    <span class="comment"># 這個參數只在samba 3.0.26以上才有支援</span></span><br><span class="line">    <span class="attribute">winbind</span> rpc only = yes</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>原因在於winbind預設是使用LDAP協定與Active Directory獲取身份資訊，若你的Active Directory沒有啟動這個功能，就要強制轉為RPC協定。</p>
+</div>
+<h2 id="更改-var-lib-samba-winbindd-privileged目錄權限">更改/var/lib/samba/winbindd_privileged目錄權限</h2>
+<p>這裡需要把radiusd這個使用者加入wbpriv群組裡，不然Freeradius是無法透過ntlm_auth來與AD驗證(需透過winbind)</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@radius ~]# usermod -G wbpriv radiusd</span><br></pre></td></tr></table></figure>
+<h2 id="Freeradius設定">Freeradius設定</h2>
+<p>上面這個部份屬於Freeradius要與AD溝通的重要基礎，接下來就要針對Freeradius來做相關的設定</p>
+<p>這裡只將會用到的參數列出</p>
+<h3 id="module-mschap設定">module/mschap設定</h3>
+<figure class="highlight toml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">mschap &#123;</span><br><span class="line">    <span class="comment"># 一般會使用domain大多都採用這個方式來做驗證(domain.com\username)</span></span><br><span class="line">    <span class="attr">with_ntdomain_hack</span> = <span class="literal">yes</span></span><br><span class="line">    <span class="comment"># 預設是沒有--domain, 所以要加上去</span></span><br><span class="line">    <span class="attr">ntlm_auth</span> = <span class="string">&quot;/usr/bin/ntlm_auth --request-nt-key --domain=%&#123;mschap:NT-Domain&#125; --username=%&#123;%&#123;Stripped-User-Name&#125;:-%&#123;%&#123;User-Name&#125;:-None&#125;&#125; --challenge=%&#123;%&#123;mschap:Challenge&#125;:-00&#125; --nt-response=%&#123;%&#123;mschap:NT-Response&#125;:-00&#125;&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="proxy-conf設定">proxy.conf設定</h3>
+<p>預設NULL與DEFAULT是註解的狀態，把#去掉，並把下述參數加入</p>
+<figure class="highlight toml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">realm NULL &#123;</span><br><span class="line">    <span class="attr">type</span>            = radius</span><br><span class="line">    <span class="attr">authhost</span>        = LOCAL</span><br><span class="line">    <span class="attr">accthost</span>        = LOCAL</span><br><span class="line">    <span class="comment"># 自行修改需要的密碼</span></span><br><span class="line">    <span class="attr">secret</span>          = testing123</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line">realm DEFAULT &#123;</span><br><span class="line">    <span class="attr">type</span>        = radius</span><br><span class="line">    <span class="attr">authhost</span>    = LOCAL</span><br><span class="line">    <span class="attr">accthost</span>    = LOCAL</span><br><span class="line">    <span class="comment"># 自行修改需要的密碼</span></span><br><span class="line">    <span class="attr">secret</span>      = testing123</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<div class="note warning"><p>在EAP驗證的環節裡面，必須要完整傳輸使用者輸入的User-Name，所以realm裡面不能加入strip，否則EAP的驗證會因為User-Name miss match而失敗。</p>
+</div>
+<h3 id="client-conf設定">client.conf設定</h3>
+<p>把Aruba Controller的ip加入</p>
+<figure class="highlight toml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">client 192.168.1.100 &#123;</span><br><span class="line">    <span class="comment"># 自行修改需要的密碼</span></span><br><span class="line">    <span class="attr">secret</span>      = testing123</span><br><span class="line">    <span class="attr">shortname</span>   = aruba</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="sites-available-default設定">sites-available/default設定</h3>
+<p>確認這兩個section裡的參數</p>
+<figure class="highlight toml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">authorize &#123;</span><br><span class="line">    mschap</span><br><span class="line">    <span class="comment">#suffix</span></span><br><span class="line">    ntdomain</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line">authenticate &#123;</span><br><span class="line">    Auth-Type MS-CHAP &#123;</span><br><span class="line">        mschap</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="EAP-設定">EAP 設定</h3>
+<p>Freeradius預設已經設定好EAP驗證所需支援的多種methods，包含MD5、TLS、TTLS、PEAP-MSCHAPv2、PEAP-GTC…等，這些method的選擇取決於使用者端的設定，所以不需要特別調整。</p>
+<h2 id="結論">結論</h2>
+<p>以上就是Freeradius的設定，基本上在Aruba Controller上的AAA Test就可以測試mschapv2是否會成功。</p>
+<p>所以給大家做參考囉。</p>
+<div class="note info"><p>P.S Aruba Controller的AAA Test是不會發送<code>EAP-Message</code>給Freeradius，要記得用其他工具來測試EAP的驗證。</p>
+</div>
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>Sam Chen
+  </li>
+  <li class="post-copyright-link">
+      <strong>文章連結：</strong>
+      <a href="https://blog.samhost.idv.tw/freeradius/integrate-active-directory/" title="FreeRADIUS 整合 Active Directory 認證(Multiple Domains 模式)">https://blog.samhost.idv.tw/freeradius/integrate-active-directory/</a>
+  </li>
+  <li class="post-copyright-license">
+      <strong>版權聲明： </strong>本網誌所有文章除特別聲明外，均採用 <span class="exturl" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC8="><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</span> 許可協議。轉載請註明出處！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/802-1X/" rel="tag"># 802.1X</a>
+              <a href="/tags/FreeRADIUS/" rel="tag"># FreeRADIUS</a>
+              <a href="/tags/Active-Directory/" rel="tag"># Active Directory</a>
+              <a href="/tags/Aruba/" rel="tag"># Aruba</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+            </div>
+            <div class="post-nav-item">
+                <a href="/fortinet/script-rblip/" rel="next" title="Fortinet FortiGate自動阻擋惡意IP列表">
+                  Fortinet FortiGate自動阻擋惡意IP列表 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2015 – 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Sam Chen</span>
+  </div>
+  <div class="powered-by">由 <span class="exturl" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl" data-url="aHR0cHM6Ly90aGVtZS1uZXh0LmpzLm9yZw==">NexT.Gemini</span> 強力驅動
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="回到頂端">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.31/fancybox/fancybox.umd.js" integrity="sha256-a+H7FYzJv6oU2hfsfDGM2Ohw/cR9v+hPfxHCLdmCrE8=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+  <script src="/js/third-party/fancybox.js"></script>
+
+
+
+  
+
+
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/quicklink/2.3.0/quicklink.umd.js" integrity="sha256-yvJQOINiH9fWemHn0vCA5lsHWJaHs6/ZmO+1Ft04SvM=" crossorigin="anonymous"></script>
+  <script class="next-config" data-name="quicklink" type="application/json">{"enable":true,"home":true,"archive":true,"delay":true,"timeout":3000,"priority":true,"url":"https://blog.samhost.idv.tw/freeradius/integrate-active-directory/"}</script>
+  <script src="/js/third-party/quicklink.js"></script>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"silent198214/silent198214.github.io","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="-eZ7fzzUKcq4Skuil_S-NO7icdY0cV002Kxcr28n6yk">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha256-5eIC48iZUHmSlSUz9XtjRyK2mzQkHScZY1WdMaoz74E=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.31/fancybox/fancybox.css" integrity="sha256-gkQVf8UKZgQ0HyuxL/VnacadJ+D2Kox2TCEBuNQg5+w=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"blog.samhost.idv.tw","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.21.1","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":false,"copycode":{"enable":true,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":false,"lazyload":true,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":false,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜尋...","empty":"我們無法找到任何有關 ${query} 的搜索結果","hits_time":"找到 ${hits} 個搜索結果（用時 ${time} 毫秒）","hits":"找到 ${hits} 個搜索結果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="前面提到了 FortiGate 如何透過 External Connectors (Threat Feeds) 來獲取 RBL，進而運用在 Firewall Policy 上過濾進出流量之外，也可以保護 FortiGate 自身所提供的服務。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Use FortiGate Automation to collect malicious IP with GitHub">
+<meta property="og:url" content="https://blog.samhost.idv.tw/fortinet/automation-collect-malicious-ip/">
+<meta property="og:site_name" content="山姆的IT日常">
+<meta property="og:description" content="前面提到了 FortiGate 如何透過 External Connectors (Threat Feeds) 來獲取 RBL，進而運用在 Firewall Policy 上過濾進出流量之外，也可以保護 FortiGate 自身所提供的服務。">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/fortigate-github-new-repository.png">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/fortigate-github-public-repository-info.png">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/fortigate-github-public-repository-setting.png">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/fortigate-github-deploy-keys-public.png">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/fortigate-github-add-deploy-key-public.png">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/fortigate-github-add-rbl-file.png">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/fortigate-github-commit-rbl-file.png">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/fortigate-github-commit-change.png">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/fortigate-github-issue-label.png">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/fortigate-github-create-label.png">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/fortigate-github-private-repository-setting.png">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/fortigate-github-private-repository-workflow-permission.png">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/fortigate-github-private-repository-action-secrets.png">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/fortigate-github-private-repository-create-secret.png">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/fortigate-github-actions.png">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/fortigate-github-actions-create-workflow.png">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/fortigate-automation-create-trigger.png">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/fortigate-automation-trigger-fortios-event.png">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/fortigate-automation-trigger-fortios-event-setting.png">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/fortigate-automation-create-action.png">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/fortigate-automation-action-webhook.png">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/fortigate-automation-action-webhook-setting.png">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/fortigate-automation-stitch-setting.png">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/fortigate-external-connector.png">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/fortigate-external-connector-ip.png">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/fortigate-external-connector-ip-setting.png">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/fortigate-github-rbl-file.png">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/fortigate-github-rbl-file-raw-url.png">
+<meta property="og:image" content="https://blog.samhost.idv.tw/images/fortigate-github-commit-stats.png">
+<meta property="article:published_time" content="2023-12-03T09:00:00.000Z">
+<meta property="article:modified_time" content="2023-12-03T09:00:00.000Z">
+<meta property="article:author" content="Sam Chen">
+<meta property="article:tag" content="Automation">
+<meta property="article:tag" content="FortiGate">
+<meta property="article:tag" content="GitHub">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.samhost.idv.tw/images/fortigate-github-new-repository.png">
+
+
+<link rel="canonical" href="https://blog.samhost.idv.tw/fortinet/automation-collect-malicious-ip/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-TW","comments":true,"permalink":"https://blog.samhost.idv.tw/fortinet/automation-collect-malicious-ip/","path":"fortinet/automation-collect-malicious-ip/","title":"Use FortiGate Automation to collect malicious IP with GitHub"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Use FortiGate Automation to collect malicious IP with GitHub | 山姆的IT日常</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-8K41M2BW4P"></script>
+  <script class="next-config" data-name="google_analytics" type="application/json">{"tracking_id":"G-8K41M2BW4P","only_pageview":false,"measure_protocol_api_secret":null}</script>
+  <script src="/js/third-party/analytics/google-analytics.js"></script>
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切換導航欄" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">山姆的IT日常</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">Networking / Devops</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜尋" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首頁</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>標籤</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分類</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>歸檔</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目錄
+        </li>
+        <li class="sidebar-nav-overview">
+          本站概要
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Requirements"><span class="nav-number">1.</span> <span class="nav-text">Requirements</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BB%BA%E7%AB%8B-SSH-RSA-Key-pair"><span class="nav-number">1.1.</span> <span class="nav-text">建立 SSH RSA Key pair</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A8%BB%E5%86%8A%E4%B8%80%E5%80%8B-GitHub-%E5%B8%B3%E8%99%9F"><span class="nav-number">2.</span> <span class="nav-text">註冊一個 GitHub 帳號</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BB%BA%E7%AB%8B-Public-Repository"><span class="nav-number">2.1.</span> <span class="nav-text">建立 Public Repository</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%A8%AD%E5%AE%9A-Deploy-public-key"><span class="nav-number">2.1.1.</span> <span class="nav-text">設定 Deploy public key</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%B0%E5%A2%9E-RBL-%E6%AA%94%E6%A1%88"><span class="nav-number">2.1.2.</span> <span class="nav-text">新增 RBL 檔案</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BB%BA%E7%AB%8B-Private-Repository"><span class="nav-number">2.2.</span> <span class="nav-text">建立 Private Repository</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BB%BA%E7%AB%8B-issue-labels"><span class="nav-number">2.2.1.</span> <span class="nav-text">建立 issue labels</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%B0%E5%A2%9E-White-list-%E6%AA%94%E6%A1%88"><span class="nav-number">2.2.2.</span> <span class="nav-text">新增 White list 檔案</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%A8%AD%E5%AE%9A-workflow-permission"><span class="nav-number">2.2.3.</span> <span class="nav-text">設定 workflow permission</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%A8%AD%E5%AE%9A-SSH-RSA-private-key"><span class="nav-number">2.2.4.</span> <span class="nav-text">設定 SSH RSA private key</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BB%BA%E7%AB%8B-Workflow"><span class="nav-number">2.2.5.</span> <span class="nav-text">建立 Workflow</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#FortiGate-Automation"><span class="nav-number">3.</span> <span class="nav-text">FortiGate Automation</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BB%BA%E7%AB%8B-Trigger"><span class="nav-number">3.1.</span> <span class="nav-text">建立 Trigger</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BB%BA%E7%AB%8B-Action"><span class="nav-number">3.2.</span> <span class="nav-text">建立 Action</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Webhook-Items"><span class="nav-number">3.2.1.</span> <span class="nav-text">Webhook Items</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Http-Header"><span class="nav-number">3.2.2.</span> <span class="nav-text">Http Header</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BB%BA%E7%AB%8B-Stitch"><span class="nav-number">3.3.</span> <span class="nav-text">建立 Stitch</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#FortiGate-External-Connectors"><span class="nav-number">4.</span> <span class="nav-text">FortiGate External Connectors</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#FortiGate-SSL-VPN-restric-access"><span class="nav-number">5.</span> <span class="nav-text">FortiGate SSL VPN restric access</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BE%8C%E8%A8%98"><span class="nav-number">6.</span> <span class="nav-text">後記</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Sam Chen"
+      src="https://github.com/silent198214.png">
+  <p class="site-author-name" itemprop="name">Sam Chen</p>
+  <div class="site-description" itemprop="description">努力的走在 IT 這條漫長的道路上</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">35</span>
+          <span class="site-state-item-name">文章</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分類</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">標籤</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL3NpbGVudDE5ODIxNA==" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;silent198214"><i class="fab fa-github fa-lg fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cubGlua2VkaW4uY29tL2luL3NhbTE5ODIv" title="Linkedin → https:&#x2F;&#x2F;www.linkedin.com&#x2F;in&#x2F;sam1982&#x2F;"><i class="fab fa-linkedin-in fa-fw"></i>Linkedin</span>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-TW">
+    <link itemprop="mainEntityOfPage" href="https://blog.samhost.idv.tw/fortinet/automation-collect-malicious-ip/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://github.com/silent198214.png">
+      <meta itemprop="name" content="Sam Chen">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="山姆的IT日常">
+      <meta itemprop="description" content="努力的走在 IT 這條漫長的道路上">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Use FortiGate Automation to collect malicious IP with GitHub | 山姆的IT日常">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Use FortiGate Automation to collect malicious IP with GitHub
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">發表於</span>
+
+      <time title="創建時間：2023-12-03 17:00:00" itemprop="dateCreated datePublished" datetime="2023-12-03T17:00:00+08:00">2023-12-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分類於</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/fortinet/" itemprop="url" rel="index"><span itemprop="name">fortinet</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>前面提到了 FortiGate 如何透過 External Connectors (Threat Feeds) 來獲取 RBL，進而運用在 Firewall Policy 上過濾進出流量之外，也可以保護 FortiGate 自身所提供的服務。</p>
+<span id="more"></span>
+<p>具一定規模的企業，通常會將 FortiGate 的 Traffic / System Log 導向自建的 Log Server 或是 (Security Information and Event Management, 簡稱 SIEM) 來進行分析，透過分析比對出惡意 IP 之後可以自動化的方式來連動資安設備進行阻斷，或是整理成自家的 RBL file 提供更多資安設備進行聯防。</p>
+<p>而本篇主要針對的面向是尚未自建 Log Server / SIEM (通常是小型企業)，卻也想要做到收集惡意 IP 來整理自家的 RBL，剛好公司 Firewall 採用的是 FortiGate (當然版本最好是 7.2.4 以上)，來打造一個自己的 RBL 收集機制。</p>
+<h2 id="Requirements">Requirements</h2>
+<p>這個機制要實作之前，你的 FortiGate version 要 <strong>7.2.4</strong> 以上 (原因可以參考 <a href="/fortinet/feed-rbl-iplist-protect-itself/" title="FortiGate protect self service via External Connectors">這篇</a>)，然後要有一個 GitHub 帳號、一對 SSH RSA Key pair 以及一組 PAT Token</p>
+<p>接下來就先說明如何建立 SSH RSA Key pair</p>
+<h3 id="建立-SSH-RSA-Key-pair">建立 SSH RSA Key pair</h3>
+<blockquote>
+<p>這對 SSH RSA Key pair 是稍等要用在 GitHub Action Workflow 上，透過 rsa key 進行不同 repository 的 git 操作<br>
+而我本身習慣用 Linux / macOS，Windows 10 的話建議是啟動一個 WSL 來執行</p>
+</blockquote>
+<p>Linux / macOS 開啟 terminal 執行以下指令，然後<strong>不要</strong>設定 <code>passphrase</code></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">$ ssh-keygen -t rsa</span><br><span class="line">Generating public/private rsa key pair.</span><br><span class="line">Enter file <span class="keyword">in</span> <span class="built_in">which</span> to save the key (/Users/sam/.ssh/id_rsa): ssh-deploy</span><br><span class="line">Enter passphrase (empty <span class="keyword">for</span> no passphrase):</span><br><span class="line">Enter same passphrase again:</span><br><span class="line">Your identification has been saved <span class="keyword">in</span> ssh-deploy.</span><br><span class="line">Your public key has been saved <span class="keyword">in</span> ssh-deploy.pub.</span><br><span class="line">The key fingerprint is:</span><br><span class="line">SHA256:ptwHC/QG/83TmrE4sy+5H8jouIDienA2jpfBVrQf9Z4 sam@SamMBP.<span class="built_in">local</span></span><br><span class="line">The key<span class="string">&#x27;s randomart image is:</span></span><br><span class="line"><span class="string">+---[RSA 3072]----+</span></span><br><span class="line"><span class="string">|                 |</span></span><br><span class="line"><span class="string">|    .   .        |</span></span><br><span class="line"><span class="string">|   . .o. .       |</span></span><br><span class="line"><span class="string">|    o..+  .      |</span></span><br><span class="line"><span class="string">| . . ...S. .     |</span></span><br><span class="line"><span class="string">|. B. ..* *E+ .   |</span></span><br><span class="line"><span class="string">|.B.+. o + =.* .  |</span></span><br><span class="line"><span class="string">|o.=  . o .=. B   |</span></span><br><span class="line"><span class="string">|o+    o.. +O*    |</span></span><br><span class="line"><span class="string">+----[SHA256]-----+</span></span><br></pre></td></tr></table></figure>
+<p>完成後會得到兩把 Key，分別以下用途</p>
+<ul>
+<li>私鑰 <strong>ssh-deploy</strong> (給 <code>Private</code> Repository 使用)</li>
+<li>公鑰 <strong>ssh-deploy.pub</strong> (給 <code>Public</code> Repository 使用)</li>
+</ul>
+<h2 id="註冊一個-GitHub-帳號">註冊一個 GitHub 帳號</h2>
+<p>如果沒有申請過，可以連到 <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29t">GitHub<i class="fa fa-external-link-alt"></i></span> 網站，在右上角點選 <code>Sign Up</code> 進行申請，過程中系統會一步一步引導，還蠻容易的。</p>
+<p>申請完成後我們就可以接下來建立 <code>Repository</code></p>
+<h3 id="建立-Public-Repository">建立 Public Repository</h3>
+<p>這個 Repository 是屬於 Public (公開) 型態，也就是所有人都可以看得到，因此我們才能讓 FortiGate External Connector 不需要做額外的認證來獲取 RBL file</p>
+<blockquote>
+<p>很多資安設備的 Feeds 不見得有提供身份認證設定功能，所以使用 Public Repository 是比較簡單的方式。</p>
+</blockquote>
+<p>首先在 Repository 頁籤點選右邊的 <code>New</code></p>
+<p><img data-src="/images/fortigate-github-new-repository.png" alt="create repository"></p>
+<p>輸入一個 Repository name，並且確認是 Public，然後勾選 <code>ADD a README file</code></p>
+<p><img data-src="/images/fortigate-github-public-repository-info.png" alt="repository information"></p>
+<p>接著拉到最下面點選 <code>Create Repository</code>，這樣就建立完成。</p>
+<h4 id="設定-Deploy-public-key">設定 Deploy public key</h4>
+<p>接下來要把剛剛產生出來的 SSH RSA Public Key (公鑰) 設定在 <code>Deploy Keys</code> 裏面</p>
+<p>在最右邊點選 <code>Settings</code></p>
+<p><img data-src="/images/fortigate-github-public-repository-setting.png" alt="repository setting"></p>
+<p>在選擇左側選單的 <code>Deploy Keys</code> 之後，點選右邊視窗上方的 <code>Add deploy key</code></p>
+<p><img data-src="/images/fortigate-github-deploy-keys-public.png" alt="deploy keys setting"></p>
+<p>輸入 <code>Title</code> 名稱，在這裡設定為 <code>DEPLOY_KEY_PUB</code>，<code>Key</code> 的部分就將剛剛產生的<strong>公鑰</strong>用編輯器打開，複製內文然後貼上，並且勾選 <code>Allow write access</code></p>
+<p><img data-src="/images/fortigate-github-add-deploy-key-public.png" alt="add public deploy key"></p>
+<p>確認都完成之後點選 <code>Add key</code></p>
+<h4 id="新增-RBL-檔案">新增 RBL 檔案</h4>
+<p>這個部分是建立一個空白的 RBL 檔案，而這個檔案裡面會是一行一個 <code>IP</code> 或是<code>網段</code>(以 cidr 格式表示)</p>
+<p><img data-src="/images/fortigate-github-add-rbl-file.png" alt="add rbl file"></p>
+<p>這裡的檔案名稱設定的是 <code>rbl-ip_home.txt</code>，這個檔名等等會用在 workflow 裡面</p>
+<p><img data-src="/images/fortigate-github-commit-rbl-file.png" alt="commit rbl file"></p>
+<p>確認沒有問題就點選 <code>Commit Changes</code></p>
+<p><img data-src="/images/fortigate-github-commit-change.png" alt="commit change"></p>
+<h3 id="建立-Private-Repository">建立 Private Repository</h3>
+<p>這個 Repository 會設定成 Private 主要是因為 GitHub Action workflow 會抓取 issue 特定格式，所以基於安全性問題，不能讓其他人看到並且有權限對 issues 進行異動</p>
+<p>流程上是讓 FortiGate Automation 偵測我們所設定好的 Login Failure Events，然後透過 Webhook 打 API 到這個 Repository 來建立一個 issue，當 issue 建立完成後，GitHub Action 會自動執行我們所設定好的 Workflow</p>
+<p>建立方式可以參照剛剛建立 Public repository，記得類型選擇 <code>Private</code></p>
+<h4 id="建立-issue-labels">建立 issue labels</h4>
+<p>首先要先建立以下四個 issue label name</p>
+<ul>
+<li>whitelist</li>
+<li>added</li>
+<li>fortios</li>
+<li>sslvpn</li>
+</ul>
+<p><img data-src="/images/fortigate-github-issue-label.png" alt="issue label"></p>
+<p><img data-src="/images/fortigate-github-create-label.png" alt="create label"></p>
+<blockquote>
+<p>label 顏色可以自行挑選</p>
+</blockquote>
+<h4 id="新增-White-list-檔案">新增 White list 檔案</h4>
+<p>可以參照剛剛在 Public repository 建立 RBL 檔案的方式，也建立一個檔名為 <code>whitelist.txt</code> 的檔案。</p>
+<p>然後可以將你想要 bypass 檢查的 IP 寫上去 (一行一個 IP)。</p>
+<h4 id="設定-workflow-permission">設定 workflow permission</h4>
+<p>接下來要先設定 workflow 的權限，讓他可以針對這個 repository 有 read/write 的權限</p>
+<p>Settings -&gt; Actions -&gt; General</p>
+<p><img data-src="/images/fortigate-github-private-repository-setting.png" alt="private repos setting"></p>
+<p><img data-src="/images/fortigate-github-private-repository-workflow-permission.png" alt="workflow permission"></p>
+<h4 id="設定-SSH-RSA-private-key">設定 SSH RSA private key</h4>
+<p>把先前產生的 SSH RSA private key 設定成 Secret variable，讓 workflow 可以取用這個 variable 對剛剛建立好的 public repository 進行 git 操作</p>
+<p>Settings -&gt; Secrets and variables -&gt; Actions</p>
+<p><img data-src="/images/fortigate-github-private-repository-action-secrets.png" alt="secrets setting"></p>
+<p>Name 為 <code>DEPLOY_KEY_PRI</code>，然後將 private key 的內容貼在 <code>Secret</code></p>
+<p><img data-src="/images/fortigate-github-private-repository-create-secret.png" alt="create secret"></p>
+<h4 id="建立-Workflow">建立 Workflow</h4>
+<p>這裡是整個自動化的重頭戲，利用 GitHub Action 來打造自動化的流程，以下是流程說明</p>
+<ol>
+<li>當一個 issue 建立時會觸發 workflow，取得 IP 後首先判斷是否為白名單 (White list)，如果是，將 issue 加入一個 label name 為 <code>whitelist</code>，然後 close 這個 issue，並結束這個 workflow；如果不是白名單，則繼續執行下個步驟。</li>
+<li>判斷該 IP 是否已存在於黑名單，如果是，將 issue 加入一個 label name 為 <code>duplicate</code>，然後 close 這個 issue，並結束這個 workflow；如果不是，則把這個 IP 寫進指定的 RBL 檔案，並將 issue 加入一個 label name 為 <code>added</code>，然後 close 這個 issue，結束這個 workflow。</li>
+</ol>
+<p>下面是 這個 workflow 的 yml</p>
+<div class="note info"><p>記得變更 <code>GIT_USERNAME</code>、<code>GIT_MAIL</code> 及第 52 行 <code>repository</code> 的資訊</p>
+</div>
+<script src="//gist.github.com/411f524a7599b25ae010c86ed2604fe3.js"></script>
+<p>Actions -&gt; set up a workflow yourself</p>
+<p><img data-src="/images/fortigate-github-actions.png" alt="github actions"></p>
+<p>將上方調整好的 yml 內容貼在 content 裡，並點選 <code>Commit changes...</code></p>
+<p><img data-src="/images/fortigate-github-actions-create-workflow.png" alt="create workflow"></p>
+<p>這樣 GitHub 所需要的配置就都完成了，接下來要設定 FortiGate</p>
+<h2 id="FortiGate-Automation">FortiGate Automation</h2>
+<p>Automation 基本上設計原理是偵測 (Trigger) 你所設定的條件是否符合，符合的話就進行動作 (Action)</p>
+<p>這裡我們拿 <code>SSL VPN brute force attack</code> 當範例來進行說明</p>
+<h3 id="建立-Trigger">建立 Trigger</h3>
+<p>Security Fabric -&gt; Automation -&gt; Trigger -&gt; Create New</p>
+<p>首先建立一個 Trigger，選擇 <code>FortiOS Event Log</code>，給定一個 <code>Name</code> 之後點選 <code>Event</code>，並選擇我們要偵測的 <code>SSL VPN login fail</code></p>
+<p><img data-src="/images/fortigate-automation-create-trigger.png" alt="create trigger"></p>
+<p><img data-src="/images/fortigate-automation-trigger-fortios-event.png" alt="fortios event"></p>
+<p><img data-src="/images/fortigate-automation-trigger-fortios-event-setting.png" alt="event setting"></p>
+<h3 id="建立-Action">建立 Action</h3>
+<p>Security Fabric -&gt; Automation -&gt; Action -&gt; Create New</p>
+<p>接下來建立一個 <code>Action</code></p>
+<p><img data-src="/images/fortigate-automation-create-action.png" alt="create action"></p>
+<p>選擇 <code>Webhook</code></p>
+<p><img data-src="/images/fortigate-automation-action-webhook.png" alt="action webhook"></p>
+<p>然後按照下面的表格內容進行設定</p>
+<h4 id="Webhook-Items">Webhook Items</h4>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">Items</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">Protocol</td>
+<td>HTTPS</td>
+</tr>
+<tr>
+<td style="text-align:center">URL</td>
+<td><code>api.github.com/repos/&lt;your github account&gt;/&lt;private repository name&gt;/issues</code></td>
+</tr>
+<tr>
+<td style="text-align:center">Method</td>
+<td>POST</td>
+</tr>
+<tr>
+<td style="text-align:center">Custom port</td>
+<td>443</td>
+</tr>
+<tr>
+<td style="text-align:center">HTTP Body</td>
+<td><code>&#123;&quot;title&quot;: &quot;detect sslvpn login fail from %%log.remip%%&quot;,&quot;body&quot;: &quot;%%log.remip%%&quot;,&quot;labels&quot;: [&quot;fortios&quot;,&quot;sslvpn&quot;]&#125;</code></td>
+</tr>
+</tbody>
+</table>
+<h4 id="Http-Header">Http Header</h4>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">Key</th>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">Accept</td>
+<td>application/vnd.github+json</td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">Authorization</td>
+<td>Bearer github_pat_XXXXXX</td>
+<td>建立方式可以參考<span class="exturl" data-url="aHR0cHM6Ly9kb2NzLmdpdGh1Yi5jb20vZW4vYXV0aGVudGljYXRpb24va2VlcGluZy15b3VyLWFjY291bnQtYW5kLWRhdGEtc2VjdXJlL21hbmFnaW5nLXlvdXItcGVyc29uYWwtYWNjZXNzLXRva2VucyNjcmVhdGluZy1hLWZpbmUtZ3JhaW5lZC1wZXJzb25hbC1hY2Nlc3MtdG9rZW4=">GitHub PAT Token<i class="fa fa-external-link-alt"></i></span></td>
+</tr>
+<tr>
+<td style="text-align:center">X-GitHub-Api-Version</td>
+<td>2022-11-28</td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align:center">User-Agent</td>
+<td>FortiGate</td>
+<td>value 可以自訂</td>
+</tr>
+</tbody>
+</table>
+<p><img data-src="/images/fortigate-automation-action-webhook-setting.png" alt="webhook setting"></p>
+<div class="note info"><p>PAT Token 必須要能夠 access 你的 <code>private repository</code>，並且針對 issues 的權限要有 <code>Read and Write</code></p>
+</div>
+<h3 id="建立-Stitch">建立 Stitch</h3>
+<p>Security Fabric -&gt; Automation -&gt; Stitch -&gt; Create New</p>
+<p>這個部分就將剛剛設定好的 <code>Trigger</code> 以及 <code>Action</code> 套用上去就完成了</p>
+<p><img data-src="/images/fortigate-automation-stitch-setting.png" alt="stitch setting"></p>
+<h2 id="FortiGate-External-Connectors">FortiGate External Connectors</h2>
+<p>Security Fabric -&gt; External Connectors</p>
+<p>建立一個 Connector</p>
+<p><img data-src="/images/fortigate-external-connector.png" alt="create ext connector"></p>
+<p>選擇 IP Address</p>
+<p><img data-src="/images/fortigate-external-connector-ip.png" alt="ext connector ip address"></p>
+<p>設定相關參數</p>
+<p><img data-src="/images/fortigate-external-connector-ip-setting.png" alt="ip address setting"></p>
+<p><code>URI of external resource</code> 的 url 可以點擊從我們在 Github <code>public</code> repository 裡面專門收集 RBL IP 的檔案，選擇 Raw，然後就可以複製這個網址進行貼上</p>
+<p><img data-src="/images/fortigate-github-rbl-file.png" alt="rbl file"></p>
+<p><img data-src="/images/fortigate-github-rbl-file-raw-url.png" alt="url of raw file"></p>
+<h2 id="FortiGate-SSL-VPN-restric-access">FortiGate SSL VPN restric access</h2>
+<p>這裡可以參考另一篇針對 FortiGate protect self service 的文章進行設定</p>
+<a href="/fortinet/feed-rbl-iplist-protect-itself/" title="FortiGate protect self service via External Connectors">FortiGate protect self service via External Connectors</a>
+<h2 id="後記">後記</h2>
+<p>自從設定好這個機制開始，每隔幾分鐘就一筆 RBL IP 被偵測到，第一天就累積了八百筆多的紀錄，而且這只是一般家裡所申請的網路，可見攻擊無所不在</p>
+<p>不過這幾天下來可以發現攻擊慢慢地由幾分鐘變成幾十分鐘，然後變每小時，到現在一天可能偵測到一次，整個效果很顯著</p>
+<p><img data-src="/images/fortigate-github-commit-stats.png" alt="commit stats"></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>Sam Chen
+  </li>
+  <li class="post-copyright-link">
+      <strong>文章連結：</strong>
+      <a href="https://blog.samhost.idv.tw/fortinet/automation-collect-malicious-ip/" title="Use FortiGate Automation to collect malicious IP with GitHub">https://blog.samhost.idv.tw/fortinet/automation-collect-malicious-ip/</a>
+  </li>
+  <li class="post-copyright-license">
+      <strong>版權聲明： </strong>本網誌所有文章除特別聲明外，均採用 <span class="exturl" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC8="><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</span> 許可協議。轉載請註明出處！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/Automation/" rel="tag"># Automation</a>
+              <a href="/tags/FortiGate/" rel="tag"># FortiGate</a>
+              <a href="/tags/GitHub/" rel="tag"># GitHub</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/fortinet/feed-rbl-iplist-protect-itself/" rel="prev" title="FortiGate protect self service via External Connectors">
+                  <i class="fa fa-angle-left"></i> FortiGate protect self service via External Connectors
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/freeradius/roaming-intro/" rel="next" title="TANet 跨校漫遊歷史演進">
+                  TANet 跨校漫遊歷史演進 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2015 – 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Sam Chen</span>
+  </div>
+  <div class="powered-by">由 <span class="exturl" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl" data-url="aHR0cHM6Ly90aGVtZS1uZXh0LmpzLm9yZw==">NexT.Gemini</span> 強力驅動
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="回到頂端">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.31/fancybox/fancybox.umd.js" integrity="sha256-a+H7FYzJv6oU2hfsfDGM2Ohw/cR9v+hPfxHCLdmCrE8=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+  <script src="/js/third-party/fancybox.js"></script>
+
+
+
+  
+
+
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/quicklink/2.3.0/quicklink.umd.js" integrity="sha256-yvJQOINiH9fWemHn0vCA5lsHWJaHs6/ZmO+1Ft04SvM=" crossorigin="anonymous"></script>
+  <script class="next-config" data-name="quicklink" type="application/json">{"enable":true,"home":true,"archive":true,"delay":true,"timeout":3000,"priority":true,"url":"https://blog.samhost.idv.tw/fortinet/automation-collect-malicious-ip/"}</script>
+  <script src="/js/third-party/quicklink.js"></script>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"silent198214/silent198214.github.io","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js"></script>
+
+</body>
+</html>

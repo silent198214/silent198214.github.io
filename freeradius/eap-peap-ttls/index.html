@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="-eZ7fzzUKcq4Skuil_S-NO7icdY0cV002Kxcr28n6yk">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha256-5eIC48iZUHmSlSUz9XtjRyK2mzQkHScZY1WdMaoz74E=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.31/fancybox/fancybox.css" integrity="sha256-gkQVf8UKZgQ0HyuxL/VnacadJ+D2Kox2TCEBuNQg5+w=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"blog.samhost.idv.tw","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.21.1","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":false,"copycode":{"enable":true,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":"utterances","storage":false,"lazyload":true,"nav":null,"activeClass":"utterances"},"stickytabs":false,"motion":{"enable":false,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜尋...","empty":"我們無法找到任何有關 ${query} 的搜索結果","hits_time":"找到 ${hits} 個搜索結果（用時 ${time} 毫秒）","hits":"找到 ${hits} 個搜索結果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="本篇說明如何在 FreeRADIUS 設定支援 PEAP&#x2F;EAP-GTC 與 EAP-TTLS&#x2F;PAP 雙驗證機制。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="FreeRADIUS 設定 PEAP&#x2F;EAP-GTC 與 EAP-TTLS&#x2F;PAP 雙驗證機制">
+<meta property="og:url" content="https://blog.samhost.idv.tw/freeradius/eap-peap-ttls/">
+<meta property="og:site_name" content="山姆的IT日常">
+<meta property="og:description" content="本篇說明如何在 FreeRADIUS 設定支援 PEAP&#x2F;EAP-GTC 與 EAP-TTLS&#x2F;PAP 雙驗證機制。">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2025-04-05T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-04-05T16:00:00.000Z">
+<meta property="article:author" content="Sam Chen">
+<meta property="article:tag" content="802.1X">
+<meta property="article:tag" content="FreeRADIUS">
+<meta property="article:tag" content="EAP">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://blog.samhost.idv.tw/freeradius/eap-peap-ttls/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-TW","comments":true,"permalink":"https://blog.samhost.idv.tw/freeradius/eap-peap-ttls/","path":"freeradius/eap-peap-ttls/","title":"FreeRADIUS 設定 PEAP/EAP-GTC 與 EAP-TTLS/PAP 雙驗證機制"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>FreeRADIUS 設定 PEAP/EAP-GTC 與 EAP-TTLS/PAP 雙驗證機制 | 山姆的IT日常</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-8K41M2BW4P"></script>
+  <script class="next-config" data-name="google_analytics" type="application/json">{"tracking_id":"G-8K41M2BW4P","only_pageview":false,"measure_protocol_api_secret":null}</script>
+  <script src="/js/third-party/analytics/google-analytics.js"></script>
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切換導航欄" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">山姆的IT日常</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">Networking / Devops</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜尋" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首頁</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>標籤</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分類</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>歸檔</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目錄
+        </li>
+        <li class="sidebar-nav-overview">
+          本站概要
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A8%AD%E5%AE%9A-TLS-Tunnel-%E6%89%80%E4%BD%BF%E7%94%A8%E7%9A%84%E6%86%91%E8%AD%89"><span class="nav-number">1.</span> <span class="nav-text">設定 TLS Tunnel 所使用的憑證</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%86%91%E8%AD%89%E7%B0%BD%E7%BD%B2"><span class="nav-number">1.1.</span> <span class="nav-text">憑證簽署</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%86%91%E8%AD%89%E5%90%88%E4%BD%B5%E9%A0%86%E5%BA%8F"><span class="nav-number">1.2.</span> <span class="nav-text">憑證合併順序</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A5%97%E7%94%A8%E6%86%91%E8%AD%89%E8%87%B3-EAP-%E8%A8%AD%E5%AE%9A%E6%AA%94"><span class="nav-number">2.</span> <span class="nav-text">套用憑證至 EAP 設定檔</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%96%8B%E5%95%9F-PEAP-EAP-GTC-%E5%8F%8A-EAP-TTLS-PAP-%E9%A9%97%E8%AD%89%E6%96%B9%E6%B3%95"><span class="nav-number">3.</span> <span class="nav-text">開啟 PEAP&#x2F;EAP-GTC 及 EAP-TTLS&#x2F;PAP 驗證方法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A8%AD%E5%AE%9A-Virtual-Sites"><span class="nav-number">4.</span> <span class="nav-text">設定 Virtual Sites</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#default"><span class="nav-number">4.1.</span> <span class="nav-text">default</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#inner-tunnel"><span class="nav-number">4.2.</span> <span class="nav-text">inner-tunnel</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Sam Chen"
+      src="https://github.com/silent198214.png">
+  <p class="site-author-name" itemprop="name">Sam Chen</p>
+  <div class="site-description" itemprop="description">努力的走在 IT 這條漫長的道路上</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">35</span>
+          <span class="site-state-item-name">文章</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分類</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">54</span>
+        <span class="site-state-item-name">標籤</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL3NpbGVudDE5ODIxNA==" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;silent198214"><i class="fab fa-github fa-lg fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cubGlua2VkaW4uY29tL2luL3NhbTE5ODIv" title="Linkedin → https:&#x2F;&#x2F;www.linkedin.com&#x2F;in&#x2F;sam1982&#x2F;"><i class="fab fa-linkedin-in fa-fw"></i>Linkedin</span>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-TW">
+    <link itemprop="mainEntityOfPage" href="https://blog.samhost.idv.tw/freeradius/eap-peap-ttls/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://github.com/silent198214.png">
+      <meta itemprop="name" content="Sam Chen">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="山姆的IT日常">
+      <meta itemprop="description" content="努力的走在 IT 這條漫長的道路上">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="FreeRADIUS 設定 PEAP/EAP-GTC 與 EAP-TTLS/PAP 雙驗證機制 | 山姆的IT日常">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          FreeRADIUS 設定 PEAP/EAP-GTC 與 EAP-TTLS/PAP 雙驗證機制
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">發表於</span>
+
+      <time title="創建時間：2025-04-06 00:00:00" itemprop="dateCreated datePublished" datetime="2025-04-06T00:00:00+08:00">2025-04-06</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分類於</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/freeradius/" itemprop="url" rel="index"><span itemprop="name">freeradius</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>本篇說明如何在 FreeRADIUS 設定支援 PEAP/EAP-GTC 與 EAP-TTLS/PAP 雙驗證機制。</p>
+<span id="more"></span>
+<h2 id="設定-TLS-Tunnel-所使用的憑證">設定 TLS Tunnel 所使用的憑證</h2>
+<p><code>PEAP</code> 與 <code>EAP-TTLS</code> 的 TLS Tunnel 機制是以<code>憑證 (Certificate-base)</code> 為基礎的方式進行驗證，而且只需要驗證 server side 即可，比起 <code>EAP-TLS</code> 需要 server / client side 雙向驗證要來的容易部署許多。</p>
+<div class="note info"><p>由於 EAP-TLS 的安全強度對於目前來說是最嚴謹的，而且 WPA3-Enterprise with 192 bit mode 只支援這一種 EAP-Type。</p>
+</div>
+<h3 id="憑證簽署">憑證簽署</h3>
+<p>憑證的使用上有很多細節需要注意，包含憑證資訊的正確性、是否有斷鏈情況以及新舊作業系統所支援的憑證階層相容性等。</p>
+<p>而在 FreeRADIUS 上使用憑證還有以下的限制要注意：</p>
+<ul>
+<li>不能使用萬用憑證 (Wildcard Certificate)。</li>
+<li>支援 SNI 憑證，但是在 Windows 平台實測 EAP-TTLS 時，驗證的網域必須要放在 CN 欄位，不能只存在 DNS 欄位，否則驗證過程還是會要你確認憑證是否是可信任的、是否要繼續連線。</li>
+</ul>
+<p>所以建議向外部 CA 憑證機構購買 <code>伺服器憑證</code> 進行簽署，並定期更新，也可以省去要在終端設備安裝 Root CA 的種種問題。</p>
+<div class="note info"><ol>
+<li>如果有辦法處理各種終端平台的 Onborading 機制，也可以使用 Private CA Server 進行自我簽署。</li>
+<li>可以參考 eduroam wiki 所說明 <span class="exturl" data-url="aHR0cHM6Ly93aWtpLmdlYW50Lm9yZy9kaXNwbGF5L0gyZWR1cm9hbS9FQVArU2VydmVyK0NlcnRpZmljYXRlK2NvbnNpZGVyYXRpb25z">EAP Server 使用憑證的注意事項<i class="fa fa-external-link-alt"></i></span> 。</li>
+</ol>
+</div>
+<h3 id="憑證合併順序">憑證合併順序</h3>
+<p>簽署完畢後，大多數的憑證機構會寄發 <code>X.509 Base64-encoded</code> 格式的檔案，可以將收到的 <code>伺服器公鑰</code>, <code>中繼憑證</code>以及<code>私鑰</code>都放在同一個檔案裡面，擺放的順序可以參考下面的格式</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">-----BEGIN RSA PRIVATE KEY-----</span><br><span class="line">...</span><br><span class="line">(憑證私鑰)</span><br><span class="line">...</span><br><span class="line">-----END RSA PRIVATE KEY-----</span><br><span class="line">-----BEGIN CERTIFICATE-----</span><br><span class="line">...</span><br><span class="line">(伺服器憑證公鑰)</span><br><span class="line">...</span><br><span class="line">-----END CERTIFICATE-----</span><br><span class="line">-----BEGIN CERTIFICATE-----</span><br><span class="line">...</span><br><span class="line">(中繼憑證)</span><br><span class="line">...</span><br><span class="line">-----END CERTIFICATE-----</span><br></pre></td></tr></table></figure>
+<div class="note warning"><p>不需要將 Root CA 憑證放入。</p>
+</div>
+<p>儲存後記得調整檔案權限。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">chown</span> root.radiusd /etc/raddb/certs/certificate-combine.pem</span><br><span class="line"></span><br><span class="line">$ <span class="built_in">chmod</span> 640 /etc/raddb/certs/certificate-combine.pem</span><br></pre></td></tr></table></figure>
+<h2 id="套用憑證至-EAP-設定檔">套用憑證至 EAP 設定檔</h2>
+<p>所有與 EAP 相關的參數都放置在 <code>/etc/raddb/mods-available/eap</code> 中，設定憑證位置的參數位在 <code>tls-config tls-common &#123;...&#125;</code> 這個 section 內。</p>
+<figure class="highlight toml"><figcaption><span>/etc/raddb/mods-available/eap</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">eap &#123;</span><br><span class="line">    ...</span><br><span class="line">    tls-config tls-common &#123;</span><br><span class="line">        <span class="attr">private_key_password</span> = whatever</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 將憑證路徑設定在以下兩個參數內</span></span><br><span class="line">        <span class="comment"># $&#123;certdir&#125; 變數指的是 /etc/raddb/certs</span></span><br><span class="line">        <span class="attr">private_key_file</span> = <span class="variable">$&#123;certdir&#125;</span>/certificate-combine.pem</span><br><span class="line">        <span class="attr">certificate_file</span> = <span class="variable">$&#123;certdir&#125;</span>/certificate-combine.pem</span><br></pre></td></tr></table></figure>
+<h2 id="開啟-PEAP-EAP-GTC-及-EAP-TTLS-PAP-驗證方法">開啟 PEAP/EAP-GTC 及 EAP-TTLS/PAP 驗證方法</h2>
+<figure class="highlight toml"><figcaption><span>/etc/raddb/mods-available/eap</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line">eap &#123;</span><br><span class="line">    <span class="comment"># 將預設值改成 peap</span></span><br><span class="line">    <span class="comment"># default_eap_type = md5</span></span><br><span class="line">    <span class="attr">default_eap_type</span> = peap</span><br><span class="line">    </span><br><span class="line">    ...</span><br><span class="line">    </span><br><span class="line">    gtc &#123;</span><br><span class="line">        <span class="comment"># 依據需求調整要使用的後端身份驗證機制</span></span><br><span class="line">        <span class="comment"># 本範例使用 Perl 撰寫 POP3s 驗證，故將預設 Auth-Type 值改成 Perl，以進行 POP3s 驗證</span></span><br><span class="line">        <span class="comment"># auth_type = PAP</span></span><br><span class="line">        <span class="attr">auth_type</span> = Perl</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    ...</span><br><span class="line">    </span><br><span class="line">    <span class="comment"># 啟用 EAP-TTLS/PAP</span></span><br><span class="line">    ttls &#123;</span><br><span class="line">        <span class="attr">tls</span> = tls-common</span><br><span class="line">        <span class="comment"># 改成 pap</span></span><br><span class="line">        <span class="attr">default_eap_type</span> = pap</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 改成 yes，將 outer tunnel 的 Access-Request attribute 複製到 inner tunnel，以便進行政策判斷</span></span><br><span class="line">        <span class="attr">copy_request_to_tunnel</span> = <span class="literal">yes</span></span><br><span class="line">        <span class="attr">use_tunneled_reply</span> = <span class="literal">no</span></span><br><span class="line">        <span class="attr">virtual_server</span> = <span class="string">&quot;inner-tunnel&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 啟用 PEAP/EAP-GTC</span></span><br><span class="line">    peap &#123;</span><br><span class="line">        <span class="attr">tls</span> = tls-common</span><br><span class="line">        <span class="comment"># 改成 gtc</span></span><br><span class="line">        <span class="attr">default_eap_type</span> = gtc</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 改成 yes，將 outer tunnel 的 Access-Request attribute 複製到 inner tunnel，以便進行政策判斷</span></span><br><span class="line">        <span class="attr">copy_request_to_tunnel</span> = <span class="literal">yes</span></span><br><span class="line">        <span class="attr">use_tunneled_reply</span> = <span class="literal">no</span></span><br><span class="line">        <span class="attr">virtual_server</span> = <span class="string">&quot;inner-tunnel&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="設定-Virtual-Sites">設定 Virtual Sites</h2>
+<p>FreeRADIUS 預設會啟動 default 及 inner-tunnel 這兩個 site，而且預設也支援 EAP method，剛好可以區隔 outer / inner，所以就直接使用。</p>
+<h3 id="default">default</h3>
+<figure class="highlight toml"><figcaption><span>/etc/raddb/site-available/default</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">server default &#123;</span><br><span class="line">    ...</span><br><span class="line">    authorize &#123;</span><br><span class="line">        filter_username</span><br><span class="line">        preprocess</span><br><span class="line">        detail</span><br><span class="line">        </span><br><span class="line">        suffix</span><br><span class="line">        eap &#123;</span><br><span class="line">            <span class="attr">ok</span> = return</span><br><span class="line">        &#125;</span><br><span class="line">        files</span><br><span class="line">        expiration</span><br><span class="line">        logintime</span><br><span class="line">        pap</span><br><span class="line">    &#125;</span><br><span class="line">    authenticate &#123;</span><br><span class="line">        Auth-Type PAP &#123;</span><br><span class="line">            pap</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 確認有啟用 eap</span></span><br><span class="line">        eap</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="inner-tunnel">inner-tunnel</h3>
+<figure class="highlight toml"><figcaption><span>/etc/raddb/site-available/inner-tunnel</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">server inner-tunnel &#123;</span><br><span class="line">    ...</span><br><span class="line">    authorize &#123;</span><br><span class="line">        filter_username</span><br><span class="line">        suffix</span><br><span class="line">        update control &#123;</span><br><span class="line">            &amp;Proxy-To-Realm := LOCAL</span><br><span class="line">        &#125;</span><br><span class="line">        eap &#123;</span><br><span class="line">            <span class="attr">ok</span> = return</span><br><span class="line">        &#125;</span><br><span class="line">        files</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 如果有額外設定 policy 可以在這邊設定</span></span><br><span class="line">        pop3s</span><br><span class="line">        expiration</span><br><span class="line">        logintime</span><br><span class="line">        pap</span><br><span class="line">    &#125;</span><br><span class="line">    authenticate &#123;</span><br><span class="line">        <span class="comment"># 如果有需要用到 Perl 來開發相關身份驗證，可以在這邊設定</span></span><br><span class="line">        Auth-Type Perl &#123;</span><br><span class="line">            perl</span><br><span class="line">        &#125;</span><br><span class="line">        Auth-Type PAP &#123;</span><br><span class="line">            pap</span><br><span class="line">        &#125;</span><br><span class="line">        Auth-Type MS-CHAP &#123;</span><br><span class="line">            mschap</span><br><span class="line">        &#125;</span><br><span class="line">        mschap</span><br><span class="line">        eap</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>Sam Chen
+  </li>
+  <li class="post-copyright-link">
+      <strong>文章連結：</strong>
+      <a href="https://blog.samhost.idv.tw/freeradius/eap-peap-ttls/" title="FreeRADIUS 設定 PEAP&#x2F;EAP-GTC 與 EAP-TTLS&#x2F;PAP 雙驗證機制">https://blog.samhost.idv.tw/freeradius/eap-peap-ttls/</a>
+  </li>
+  <li class="post-copyright-license">
+      <strong>版權聲明： </strong>本網誌所有文章除特別聲明外，均採用 <span class="exturl" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC8="><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</span> 許可協議。轉載請註明出處！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/802-1X/" rel="tag"># 802.1X</a>
+              <a href="/tags/FreeRADIUS/" rel="tag"># FreeRADIUS</a>
+              <a href="/tags/EAP/" rel="tag"># EAP</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/freeradius/tls-tunnel-anonymous/" rel="prev" title="關於 802.1X 的匿名使用者 anonymous identity">
+                  <i class="fa fa-angle-left"></i> 關於 802.1X 的匿名使用者 anonymous identity
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/freeradius/inner-rely-attribute-to-outer/" rel="next" title="How to reply inner attribute to external system">
+                  How to reply inner attribute to external system <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments utterances-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2015 – 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Sam Chen</span>
+  </div>
+  <div class="powered-by">由 <span class="exturl" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl" data-url="aHR0cHM6Ly90aGVtZS1uZXh0LmpzLm9yZw==">NexT.Gemini</span> 強力驅動
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="回到頂端">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.31/fancybox/fancybox.umd.js" integrity="sha256-a+H7FYzJv6oU2hfsfDGM2Ohw/cR9v+hPfxHCLdmCrE8=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+  <script src="/js/third-party/fancybox.js"></script>
+
+
+
+  
+
+
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/quicklink/2.3.0/quicklink.umd.js" integrity="sha256-yvJQOINiH9fWemHn0vCA5lsHWJaHs6/ZmO+1Ft04SvM=" crossorigin="anonymous"></script>
+  <script class="next-config" data-name="quicklink" type="application/json">{"enable":true,"home":true,"archive":true,"delay":true,"timeout":3000,"priority":true,"url":"https://blog.samhost.idv.tw/freeradius/eap-peap-ttls/"}</script>
+  <script src="/js/third-party/quicklink.js"></script>
+<script class="next-config" data-name="utterances" type="application/json">{"enable":true,"repo":"silent198214/silent198214.github.io","issue_term":"pathname","theme":"github-light"}</script>
+<script src="/js/third-party/comments/utterances.js"></script>
+
+</body>
+</html>
